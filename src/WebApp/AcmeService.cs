@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,10 +12,12 @@ namespace WebApp {
     public class AcmeService : HostedService {
         private readonly IApplicationLifetime applicationLifetime;
         private readonly IMemoryCache memoryCache;
+        private readonly IHostingEnvironment hostingEnvironment;
 
-        public AcmeService(IApplicationLifetime applicationLifetime, IMemoryCache memoryCache) {
+        public AcmeService(IApplicationLifetime applicationLifetime, IMemoryCache memoryCache, IHostingEnvironment hostingEnvironment) {
             this.applicationLifetime = applicationLifetime;
             this.memoryCache = memoryCache;
+            this.hostingEnvironment = hostingEnvironment;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
@@ -60,7 +63,9 @@ namespace WebApp {
                 // OR
 
                 var pfxBuilder = cert.ToPfx(privateKey);
-                var pfx = pfxBuilder.Build("my-cert", "abcd1234");
+                var pfx = pfxBuilder.Build("https-cert", "abcd1234");
+                string pfxPath = Path.Combine(hostingEnvironment.ContentRootPath, "https-cert.pfx");
+                await File.WriteAllBytesAsync(pfxPath, pfx);
 
                 applicationLifetime.StopApplication();
             }
