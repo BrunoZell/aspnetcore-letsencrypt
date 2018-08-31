@@ -18,7 +18,7 @@ namespace WebApp {
 
         public void ConfigureServices(IServiceCollection services) {
             services.AddOptions();
-            services.Configure<LetsEncryptOptions>(Configuration.GetSection("LetsEncrypt"));
+            services.Configure<LetsEncryptOptions>(Configuration.GetSection(LetsEncryptOptions.SectionName));
 
             services.AddMemoryCache();
             services.AddSingleton<IHostedService, AcmeService>();

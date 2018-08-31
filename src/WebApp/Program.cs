@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using WebApp.Options;
 
 namespace WebApp {
     public class Program {
@@ -21,8 +23,12 @@ namespace WebApp {
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(options => {
+                    var letsencryptOptions = options.ConfigurationLoader.Configuration
+                        .GetSection(LetsEncryptOptions.SectionName)
+                        .Get<LetsEncryptOptions>();
+
                     options.ListenAnyIP(80);
-                    options.ListenAnyIP(443, o => o.UseHttps("https-cert.pfx", "abcd1234"));
+                    options.ListenAnyIP(443, o => o.UseHttps(letsencryptOptions.Certificate.Filename, letsencryptOptions.Certificate.Password));
                 })
                 .UseStartup<Startup>();
     }
