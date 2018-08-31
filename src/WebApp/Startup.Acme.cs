@@ -3,12 +3,23 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using WebApp.Options;
 
 namespace WebApp {
     public class StartupAcme {
+        public IConfiguration Configuration { get; }
+
+        public StartupAcme(IConfiguration configuration) {
+            Configuration = configuration;
+        }
+
         public void ConfigureServices(IServiceCollection services) {
+            services.AddOptions();
+            services.Configure<LetsEncryptOptions>(Configuration.GetSection("LetsEncrypt"));
+
             services.AddMemoryCache();
             services.AddSingleton<IHostedService, AcmeService>();
         }

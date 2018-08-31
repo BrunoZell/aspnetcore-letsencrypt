@@ -8,27 +8,30 @@ using Certes;
 using Certes.Acme;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using WebApp.Options;
 
 namespace WebApp {
     public class AcmeService : HostedService {
+        private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime applicationLifetime;
         private readonly IMemoryCache memoryCache;
         private readonly IHostingEnvironment hostingEnvironment;
 
-        public AcmeService(IApplicationLifetime applicationLifetime, IMemoryCache memoryCache, IHostingEnvironment hostingEnvironment) {
+        public AcmeService(IOptions<LetsEncryptOptions> options, IApplicationLifetime applicationLifetime, IMemoryCache memoryCache, IHostingEnvironment hostingEnvironment) {
+            this.options = options.Value;
             this.applicationLifetime = applicationLifetime;
             this.memoryCache = memoryCache;
             this.hostingEnvironment = hostingEnvironment;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
-            var pfxPath = Path.Combine(hostingEnvironment.ContentRootPath, "https-cert.pfx");
             try {
 
-                if (File.Exists(pfxPath)) {
+                if (File.Exists(options.Certificate.Filename)) {
                     // certificate exists already. Validate and renew if neccessary
                     var collection = new X509Certificate2Collection();
-                    collection.Import(pfxPath, "abcd1234", X509KeyStorageFlags.PersistKeySet);
+                    collection.Import(options.Certificate.Filename, options.Certificate.Password, X509KeyStorageFlags.PersistKeySet);
 
                     foreach (var certificate in collection.Cast<X509Certificate2>().Where(c => c.Issuer.Equals("CN=Fake LE Root X1", StringComparison.InvariantCultureIgnoreCase))) {
                         if (certificate.NotAfter > DateTime.Now && certificate.NotBefore < DateTime.Now) {
@@ -43,13 +46,25 @@ namespace WebApp {
                     return;
                 }
 
-                var acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2);
-                var account = await acme.NewAccount("bruno.zzell@gmail.com", true);
+                IAccountContext account;
+                IAcmeContext acme;
 
-                // Save the account key for later use
-                var pemKey = acme.AccountKey.ToPem();
+                if (!string.IsNullOrWhiteSpace(options.AccountKey)) {
+                    // Load the saved account key
+                    var accountKey = KeyFactory.FromPem(options.AccountKey);
+                    acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2, accountKey);
+                    account = await acme.Account();
 
-                var order = await acme.NewOrder(new[] { "02041c1c.ngrok.io" });
+                }
+                else {
+                    // Create new account
+                    acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2);
+                    account = await acme.NewAccount(options.Email, true);
+                    // Todo: Save the account key for later use
+                    options.AccountKey = acme.AccountKey.ToPem();
+                }
+
+                var order = await acme.NewOrder(new[] { options.Hostname });
 
                 var authz = ( await order.Authorizations() ).First();
                 var httpChallenge = await authz.Http();
@@ -65,27 +80,19 @@ namespace WebApp {
                 var challenge = await authz.Http();
                 var challengeRessource = await challenge.Resource();
 
-                var challengeResult = await challenge.Validate();
-
-
-                x = await httpChallenge.Validate();
                 var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
-                var cert = await order.Generate(new CsrInfo {
-                    CountryName = "DE",
-                    State = "Ontario",
-                    Locality = "Toronto",
-                    Organization = "Certes",
-                    OrganizationUnit = "Dev",
-                    CommonName = "02041c1c.ngrok.io",
+                var cert = await order.Generate(new Certes.CsrInfo {
+                    CountryName = options.CsrInfo.CountryName,
+                    State = options.CsrInfo.State,
+                    Locality = options.CsrInfo.Locality,
+                    Organization = options.CsrInfo.Organization,
+                    OrganizationUnit = options.CsrInfo.OrganizationUnit,
+                    CommonName = options.CsrInfo.CommonName
                 }, privateKey);
 
-                var certPem = cert.ToPem();
-
-                // OR
-
                 var pfxBuilder = cert.ToPfx(privateKey);
-                var pfx = pfxBuilder.Build("https-cert", "abcd1234");
-                await File.WriteAllBytesAsync(pfxPath, pfx);
+                var pfx = pfxBuilder.Build(options.Certificate.FriendlyName, options.Certificate.Password);
+                await File.WriteAllBytesAsync(options.Certificate.Filename, pfx);
 
                 applicationLifetime.StopApplication();
             }
