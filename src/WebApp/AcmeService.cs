@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Certes;
@@ -21,7 +22,27 @@ namespace WebApp {
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            var pfxPath = Path.Combine(hostingEnvironment.ContentRootPath, "https-cert.pfx");
             try {
+
+                if (File.Exists(pfxPath)) {
+                    // certificate exists already. Validate and renew if neccessary
+                    var collection = new X509Certificate2Collection();
+                    collection.Import(pfxPath, "abcd1234", X509KeyStorageFlags.PersistKeySet);
+
+                    foreach (var certificate in collection.Cast<X509Certificate2>().Where(c => c.Issuer.Equals("CN=Fake LE Root X1", StringComparison.InvariantCultureIgnoreCase))) {
+                        if (certificate.NotAfter > DateTime.Now && certificate.NotBefore < DateTime.Now) {
+                            // Still valid
+                            applicationLifetime.StopApplication();
+                            return;
+                        }
+                    }
+
+                    // Expired. Renew...
+
+                    return;
+                }
+
                 var acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2);
                 var account = await acme.NewAccount("bruno.zzell@gmail.com", true);
 
@@ -64,7 +85,6 @@ namespace WebApp {
 
                 var pfxBuilder = cert.ToPfx(privateKey);
                 var pfx = pfxBuilder.Build("https-cert", "abcd1234");
-                string pfxPath = Path.Combine(hostingEnvironment.ContentRootPath, "https-cert.pfx");
                 await File.WriteAllBytesAsync(pfxPath, pfx);
 
                 applicationLifetime.StopApplication();
