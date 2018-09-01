@@ -13,35 +13,23 @@ using WebApp.Options;
 namespace WebApp.Internal {
     internal class AcmeChallengeRequester : HostedService {
         private readonly LetsEncryptOptions options;
-        private readonly IApplicationLifetime applicationLifetime;
+        private readonly IApplicationLifetime application;
         private readonly IHttpChallengeResponseStore responseStore;
 
-        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime applicationLifetime, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
+        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
             this.options = options;
-            this.applicationLifetime = applicationLifetime;
+            this.application = application;
             this.responseStore = responseStore;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             try {
-
-                if (File.Exists(options.Certificate.Filename)) {
-                    // certificate exists already. Validate and renew if neccessary
-                    var collection = new X509Certificate2Collection();
-                    collection.Import(options.Certificate.Filename, options.Certificate.Password, X509KeyStorageFlags.PersistKeySet);
-
-                    foreach (var certificate in collection.Cast<X509Certificate2>().Where(c => c.Issuer.Equals(options.Authority.Name, StringComparison.InvariantCultureIgnoreCase))) {
-                        if (certificate.NotAfter > DateTime.Now && certificate.NotBefore < DateTime.Now) {
-                            // Still valid
-                            applicationLifetime.StopApplication();
-                            return;
-                        }
-                    }
-
-                    // Expired. Renew...
-
+                if (TestForValidCertificate(options.Certificate, options.Authority.Name)) {
+                    // A valid certificate exists. Fast forward to the web app...
+                    application.StopApplication();
                     return;
                 }
+
 
                 IAccountContext account;
                 IAcmeContext acme;
@@ -91,12 +79,29 @@ namespace WebApp.Internal {
                 byte[] pfx = pfxBuilder.Build(options.Certificate.FriendlyName, options.Certificate.Password);
                 await File.WriteAllBytesAsync(options.Certificate.Filename, pfx);
 
-                applicationLifetime.StopApplication();
+                application.StopApplication();
             }
             catch (Exception) {
 
                 throw;
             }
+        }
+
+        private static bool TestForValidCertificate(Certificate certificate, string authorityName) {
+            if (!File.Exists(certificate.Filename)) {
+                // Certificate does not exist yet
+                return false;
+            }
+
+            // Certificate exists already
+            var existingCertificates = new X509Certificate2Collection();
+            existingCertificates.Import(certificate.Filename, certificate.Password, X509KeyStorageFlags.PersistKeySet);
+
+            // Test if a certificate is issued by the specified authority and whether it's not expired
+            return existingCertificates
+                .Cast<X509Certificate2>()
+                .Where(c => c.Issuer.Equals(authorityName, StringComparison.InvariantCultureIgnoreCase))
+                .Any(c => c.NotAfter > DateTime.Now && c.NotBefore < DateTime.Now);
         }
     }
 }
