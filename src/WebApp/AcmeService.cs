@@ -7,22 +7,22 @@ using System.Threading.Tasks;
 using Certes;
 using Certes.Acme;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using WebApp.Internal;
 using WebApp.Options;
 
 namespace WebApp {
-    public class AcmeService : HostedService {
+    internal class AcmeService : HostedService {
         private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime applicationLifetime;
-        private readonly IMemoryCache memoryCache;
         private readonly IHostingEnvironment hostingEnvironment;
+        private readonly IHttpChallengeResponseStore responseStore;
 
-        public AcmeService(IOptions<LetsEncryptOptions> options, IApplicationLifetime applicationLifetime, IMemoryCache memoryCache, IHostingEnvironment hostingEnvironment) {
+        public AcmeService(IOptions<LetsEncryptOptions> options, IApplicationLifetime applicationLifetime, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
             this.options = options.Value;
             this.applicationLifetime = applicationLifetime;
-            this.memoryCache = memoryCache;
             this.hostingEnvironment = hostingEnvironment;
+            this.responseStore = responseStore;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
@@ -68,10 +68,9 @@ namespace WebApp {
 
                 var authz = ( await order.Authorizations() ).First();
                 var httpChallenge = await authz.Http();
-                var keyAuthz = httpChallenge.KeyAuthz;
+                string keyAuthz = httpChallenge.KeyAuthz;
 
-                memoryCache.Set("token", httpChallenge.Token);
-                memoryCache.Set("response", keyAuthz);
+                responseStore.AddChallengeResponse(httpChallenge.Token, keyAuthz);
 
                 var x = await httpChallenge.Validate();
 
@@ -87,16 +86,16 @@ namespace WebApp {
                     Locality = options.CsrInfo.Locality,
                     Organization = options.CsrInfo.Organization,
                     OrganizationUnit = options.CsrInfo.OrganizationUnit,
-                    CommonName = options.CsrInfo.CommonName
+                    CommonName = options.Hostname
                 }, privateKey);
 
                 var pfxBuilder = cert.ToPfx(privateKey);
-                var pfx = pfxBuilder.Build(options.Certificate.FriendlyName, options.Certificate.Password);
+                byte[] pfx = pfxBuilder.Build(options.Certificate.FriendlyName, options.Certificate.Password);
                 await File.WriteAllBytesAsync(options.Certificate.Filename, pfx);
 
                 applicationLifetime.StopApplication();
             }
-            catch (Exception ex) {
+            catch (Exception) {
 
                 throw;
             }
