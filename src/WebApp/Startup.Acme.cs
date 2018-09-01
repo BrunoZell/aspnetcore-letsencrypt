@@ -23,19 +23,9 @@ namespace WebApp {
             services.AddSingleton<IHostedService, AcmeService>();
         }
 
-        public void Configure(IApplicationBuilder app, IHttpChallengeResponseStore responseStore) {
+        public void Configure(IApplicationBuilder app) {
             app.Map("/.well-known/acme-challenge", mapped => {
-                app.Run(async context => {
-                    string token = context.Request.Path.ToString().Replace(".well-known/acme-challenge", "").Trim('/');
-                    if (!responseStore.TryGetResponse(token, out string response)) {
-                        await context.Response.WriteAsync("ACME challenge token unknown");
-                        return;
-                    }
-
-                    context.Response.ContentLength = response.Length;
-                    context.Response.ContentType = "application/octet-stream";
-                    await context.Response.WriteAsync(response, context.RequestAborted);
-                });
+                app.UseMiddleware<AcmeChallengeMiddleware>();
             });
 
             app.Run(async context => {
