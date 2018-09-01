@@ -36,8 +36,8 @@ namespace WebApp {
 
         private IWebHostBuilder CreateAcmeHostBuilder() =>
             new WebHostBuilder()
-                .ConfigureServices(services => services.AddSingleton(Options))
                 .UseKestrel(options => options.ListenAnyIP(80))
+                .ConfigureServices(services => services.AddSingleton(Options))
                 .UseStartup<HostStartup>();
 
         private static IConfiguration BuildConfiguration(string[] args) =>
