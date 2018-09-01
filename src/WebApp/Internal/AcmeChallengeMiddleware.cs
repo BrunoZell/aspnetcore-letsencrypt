@@ -1,24 +1,21 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace WebApp.Internal {
     internal class AcmeChallengeMiddleware {
-        private readonly RequestDelegate next;
-
-        public AcmeChallengeMiddleware(RequestDelegate next) {
-            this.next = next;
-        }
+        public AcmeChallengeMiddleware(RequestDelegate next) { }
 
         public async Task InvokeAsync(HttpContext context, IHttpChallengeResponseStore responseStore) {
-            string token = context.Request.Path.ToString().Replace(".well-known/acme-challenge", "").Trim('/');
+            string token = context.GetRouteValue("acmeToken") as string;
             if (!responseStore.TryGetResponse(token, out string response)) {
-                await context.Response.WriteAsync("ACME challenge token unknown");
+                await context.Response.WriteAsync("ACME challenge token invalid");
                 return;
             }
 
             context.Response.ContentLength = response.Length;
             context.Response.ContentType = "application/octet-stream";
-            await context.Response.WriteAsync(response, context.RequestAborted);
+            await context.Response.WriteAsync(response);
         }
     }
 }
