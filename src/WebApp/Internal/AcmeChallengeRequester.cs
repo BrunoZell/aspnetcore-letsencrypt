@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Certes;
 using Certes.Acme;
+using Certes.Acme.Resource;
 using Microsoft.AspNetCore.Hosting;
 using WebApp.Internal.Abstractions;
 using WebApp.Options;
@@ -43,15 +44,9 @@ namespace WebApp.Internal {
                 // Save the expected response
                 responseStore.AddChallengeResponse(httpChallenge.Token, httpChallenge.KeyAuthz);
 
-                // Request validation http request
+                // Execute http challenge
                 await httpChallenge.Validate();
-
-                // Get the ressource to check if it's valid
-                var challengeRessource = await httpChallenge.Resource();
-                if (challengeRessource.Status != Certes.Acme.Resource.ChallengeStatus.Valid) {
-                    ;
-                    // Todo: Wait until challenge has finished
-                }
+                await WaitForHttpChallenge(httpChallenge);
 
                 // Download final certificate
                 var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
@@ -73,10 +68,27 @@ namespace WebApp.Internal {
                 await File.WriteAllBytesAsync(options.Certificate.Filename, cartificatePfx);
             }
             catch (Exception) {
+                // Todo: Log errors and terminate web app. Also make it configurable if to terminate or not
                 ;
-            } finally {
+            }
+            finally {
                 // Stop application and start the web app
                 application.StopApplication();
+            }
+        }
+
+        private static async Task WaitForHttpChallenge(IChallengeContext context) {
+            // Get the challenges ressource to check if it's valid
+            var challenge = await context.Resource();
+            while (challenge.Status == ChallengeStatus.Pending || challenge.Status == ChallengeStatus.Processing) {
+                // If nor finished processing, poll every second
+                challenge = await context.Resource();
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+
+            if (challenge.Status != ChallengeStatus.Valid) {
+                // Throw if invalid
+                new Exception(challenge.Error?.Detail ?? "ACME challenge not successful.");
             }
         }
 
