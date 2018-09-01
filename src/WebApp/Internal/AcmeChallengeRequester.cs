@@ -31,28 +31,31 @@ namespace WebApp.Internal {
                 }
 
                 var directoryUri = new Uri(options.Authority.DirectoryUri);
-                var (acme, account) = await InitializeAccount(directoryUri, options.AccountKey);
+                var (acme, account) = await InitializeAccount(directoryUri, options.Email, options.AccountKey);
 
                 // Todo: Save the account key for later use
                 options.AccountKey = acme.AccountKey.ToPem();
 
                 var order = await acme.NewOrder(new[] { options.Hostname });
+                var authorization = ( await order.Authorizations() ).First();
+                var httpChallenge = await authorization.Http();
 
-                var authz = ( await order.Authorizations() ).First();
-                var httpChallenge = await authz.Http();
-                string keyAuthz = httpChallenge.KeyAuthz;
+                // Save the expected response
+                responseStore.AddChallengeResponse(httpChallenge.Token, httpChallenge.KeyAuthz);
 
-                responseStore.AddChallengeResponse(httpChallenge.Token, keyAuthz);
+                // Request validation http request
+                await httpChallenge.Validate();
 
-                var x = await httpChallenge.Validate();
+                // Get the ressource to check if it's valid
+                var challengeRessource = await httpChallenge.Resource();
+                if (challengeRessource.Status != Certes.Acme.Resource.ChallengeStatus.Valid) {
+                    ;
+                    // Todo: Wait until challenge has finished
+                }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
-
-                var challenge = await authz.Http();
-                var challengeRessource = await challenge.Resource();
-
+                // Download final certificate
                 var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
-                var cert = await order.Generate(new Certes.CsrInfo {
+                var certificate = await order.Generate(new Certes.CsrInfo {
                     CountryName = options.CsrInfo.CountryName,
                     State = options.CsrInfo.State,
                     Locality = options.CsrInfo.Locality,
@@ -61,15 +64,19 @@ namespace WebApp.Internal {
                     CommonName = options.Hostname
                 }, privateKey);
 
-                var pfxBuilder = cert.ToPfx(privateKey);
-                byte[] pfx = pfxBuilder.Build(options.Certificate.FriendlyName, options.Certificate.Password);
-                await File.WriteAllBytesAsync(options.Certificate.Filename, pfx);
+                // Generate the pfx for file storage
+                byte[] cartificatePfx = certificate
+                    .ToPfx(privateKey)
+                    .Build(options.Certificate.FriendlyName, options.Certificate.Password);
 
-                application.StopApplication();
+                // Write pfx to file
+                await File.WriteAllBytesAsync(options.Certificate.Filename, cartificatePfx);
             }
             catch (Exception) {
-
-                throw;
+                ;
+            } finally {
+                // Stop application and start the web app
+                application.StopApplication();
             }
         }
 
