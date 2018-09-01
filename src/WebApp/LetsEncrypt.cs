@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -36,6 +37,7 @@ namespace WebApp {
 
         private IWebHostBuilder CreateAcmeHostBuilder() =>
             new WebHostBuilder()
+                .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseKestrel(options => options.ListenAnyIP(80))
                 .ConfigureServices(services => services.AddSingleton(Options))
                 .UseStartup<HostStartup>();

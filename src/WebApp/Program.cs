@@ -13,8 +13,9 @@ namespace WebApp {
                 .Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args, Certificate httpsCertificate)
-            => WebHost.CreateDefaultBuilder<Startup>(args)
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args, Certificate httpsCertificate) =>
+            WebHost.CreateDefaultBuilder<Startup>(args)
+                .UseUrls() // Remove warning for overridden settings by UseKestrel
                 .UseKestrel(options => {
                     options.ListenAnyIP(80);
                     options.ListenAnyIP(443, o => o.UseHttps(httpsCertificate.Filename, httpsCertificate.Password));
