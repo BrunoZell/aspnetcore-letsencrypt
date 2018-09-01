@@ -48,23 +48,8 @@ namespace WebApp.Internal {
                 await httpChallenge.Validate();
                 await WaitForHttpChallenge(httpChallenge);
 
-                // Download final certificate
-                var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
-                var certificate = await order.Generate(new Certes.CsrInfo {
-                    CountryName = options.CsrInfo.CountryName,
-                    State = options.CsrInfo.State,
-                    Locality = options.CsrInfo.Locality,
-                    Organization = options.CsrInfo.Organization,
-                    OrganizationUnit = options.CsrInfo.OrganizationUnit,
-                    CommonName = options.Hostname
-                }, privateKey);
-
-                // Generate the pfx for file storage
-                byte[] cartificatePfx = certificate
-                    .ToPfx(privateKey)
-                    .Build(options.Certificate.FriendlyName, options.Certificate.Password);
-
                 // Write pfx to file
+                byte[] cartificatePfx = await GetFinalCertificateAsPfx(order, options.CsrInfo, options.Certificate, options.Hostname);
                 await File.WriteAllBytesAsync(options.Certificate.Filename, cartificatePfx);
             }
             catch (Exception) {
@@ -72,11 +57,31 @@ namespace WebApp.Internal {
                 ;
             }
             finally {
-                // Stop application and start the web app
+                // Stop intermediary application and start the web app
                 application.StopApplication();
             }
         }
 
+        // Todo: As extension method
+        private static async Task<byte[]> GetFinalCertificateAsPfx(IOrderContext order, Options.CsrInfo csrInfo, Certificate certificateInfo, string hostname) {
+            // Download final certificate
+            var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
+            var certificate = await order.Generate(new Certes.CsrInfo {
+                CountryName = csrInfo.CountryName,
+                State = csrInfo.State,
+                Locality = csrInfo.Locality,
+                Organization = csrInfo.Organization,
+                OrganizationUnit = csrInfo.OrganizationUnit,
+                CommonName = hostname
+            }, privateKey);
+
+            // Generate the pfx for file storage
+            return certificate
+                .ToPfx(privateKey)
+                .Build(certificateInfo.FriendlyName, certificateInfo.Password);
+        }
+
+        // Todo: As extension method
         private static async Task WaitForHttpChallenge(IChallengeContext context) {
             // Get the challenges ressource to check if it's valid
             var challenge = await context.Resource();

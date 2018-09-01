@@ -24,6 +24,7 @@ namespace WebApp {
         }
 
         public void EnsureHttps() =>
+            // Todo: Inform over success (injected singleton maybe?)
             CreateAcmeHostBuilder()
                 .Build()
                 .Run();
