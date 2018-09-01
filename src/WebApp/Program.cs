@@ -1,6 +1,11 @@
 ﻿using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using WebApp.Extensions;
+using WebApp.Internal;
 using WebApp.Options;
 
 namespace WebApp {
@@ -25,8 +30,18 @@ namespace WebApp {
         public static IWebHostBuilder CreateAcmeHostBuilder(string[] args)
            => new WebHostBuilder()
                 .UseConfiguration(HttpsSetupConfiguration(args))
-                .UseKestrel(options => options.ListenAnyIP(80))
-                .UseStartup<StartupAcme>();
+                .ConfigureServices(services => {
+                    var configuration = HttpsSetupConfiguration(args);
+
+                    services.AddOptions();
+                    services.Configure<LetsEncryptOptions>(configuration.GetSection(LetsEncryptOptions.SectionName));
+
+                    services.AddAcmeChallenge();
+                    services.AddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
+                    services.AddSingleton<IStartupFilter, AcmeStartupFilter>();
+                    services.AddSingleton<IHostedService, AcmeService>();
+                })
+                .UseKestrel(options => options.ListenAnyIP(80));
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
