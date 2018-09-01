@@ -6,7 +6,7 @@ using WebApp.Options;
 namespace WebApp {
     public class Program {
         public static void Main(string[] args) {
-            CreateAcmeHostBuilder()
+            CreateAcmeHostBuilder(args)
                 .Build()
                 .Run();
 
@@ -15,8 +15,16 @@ namespace WebApp {
                 .Run();
         }
 
-        public static IWebHostBuilder CreateAcmeHostBuilder()
+        public static IConfiguration HttpsSetupConfiguration(string[] args)
+            => new ConfigurationBuilder()
+                .AddCommandLine(args)
+                .AddEnvironmentVariables("HTTPS")
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
+
+        public static IWebHostBuilder CreateAcmeHostBuilder(string[] args)
            => new WebHostBuilder()
+                .UseConfiguration(HttpsSetupConfiguration(args))
                 .UseKestrel(options => options.ListenAnyIP(80))
                 .UseStartup<StartupAcme>();
 
