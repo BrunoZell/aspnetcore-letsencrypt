@@ -31,7 +31,8 @@ namespace WebApp {
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(options => {
-                    var letsencryptOptions = options.ConfigurationLoader.Configuration
+                    var configuration = HttpsSetupConfiguration(args);
+                    var letsencryptOptions = configuration
                         .GetSection(LetsEncryptOptions.SectionName)
                         .Get<LetsEncryptOptions>();
 
