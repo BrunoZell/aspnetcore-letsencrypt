@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Certes;
@@ -25,12 +24,6 @@ namespace WebApp.Internal {
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             try {
-                if (TestForValidCertificate(options.Certificate, options.RenewalBuffer, options.Authority.Name)) {
-                    // A valid certificate exists. Fast forward to the web app...
-                    application.StopApplication();
-                    return;
-                }
-
                 var directoryUri = new Uri(options.Authority.DirectoryUri);
                 var (acme, account) = await InitializeAccount(directoryUri, options.Email, options.AccountKey);
 
@@ -119,23 +112,6 @@ namespace WebApp.Internal {
                 var account = await acme.NewAccount(email, true);
                 return (acme, account);
             }
-        }
-
-        private static bool TestForValidCertificate(Certificate certificate, TimeSpan renewalBuffer, string authorityName) {
-            if (!File.Exists(certificate.Filename)) {
-                // Certificate does not exist yet
-                return false;
-            }
-
-            // Certificate exists already
-            var existingCertificates = new X509Certificate2Collection();
-            existingCertificates.Import(certificate.Filename, certificate.Password, X509KeyStorageFlags.PersistKeySet);
-
-            // Test if a certificate is issued by the specified authority and whether it's not expired
-            return existingCertificates
-                .Cast<X509Certificate2>()
-                .Where(c => c.Issuer.Equals(authorityName, StringComparison.InvariantCultureIgnoreCase))
-                .Any(c => (c.NotAfter - renewalBuffer) > DateTime.Now && c.NotBefore < DateTime.Now);
         }
     }
 }
