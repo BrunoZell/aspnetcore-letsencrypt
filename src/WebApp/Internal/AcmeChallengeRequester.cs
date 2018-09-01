@@ -8,17 +8,16 @@ using Certes;
 using Certes.Acme;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
-using WebApp.Internal;
 using WebApp.Options;
 
-namespace WebApp {
-    internal class AcmeService : HostedService {
+namespace WebApp.Internal {
+    internal class AcmeChallengeRequester : HostedService {
         private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime applicationLifetime;
         private readonly IHostingEnvironment hostingEnvironment;
         private readonly IHttpChallengeResponseStore responseStore;
 
-        public AcmeService(IOptions<LetsEncryptOptions> options, IApplicationLifetime applicationLifetime, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
+        public AcmeChallengeRequester(IOptions<LetsEncryptOptions> options, IApplicationLifetime applicationLifetime, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
             this.options = options.Value;
             this.applicationLifetime = applicationLifetime;
             this.hostingEnvironment = hostingEnvironment;

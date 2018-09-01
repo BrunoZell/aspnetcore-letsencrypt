@@ -5,14 +5,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using WebApp.Extensions;
-using WebApp.Internal;
 using WebApp.Options;
 
-namespace WebApp {
-    internal class StartupAcme {
+namespace WebApp.Internal {
+    internal class HostStartup {
         public IConfiguration Configuration { get; }
 
-        public StartupAcme(IConfiguration configuration) {
+        public HostStartup(IConfiguration configuration) {
             Configuration = configuration;
         }
 
@@ -20,13 +19,13 @@ namespace WebApp {
             services.AddOptions();
             services.Configure<LetsEncryptOptions>(Configuration.GetSection(LetsEncryptOptions.SectionName));
 
-            services.AddAcmeChallenge();
+            services.AddAcmeChallengeListener();
             services.AddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
-            services.AddSingleton<IHostedService, AcmeService>();
+            services.AddSingleton<IHostedService, AcmeChallengeRequester>();
         }
 
         public void Configure(IApplicationBuilder app) {
-            app.UseAcmeChallenge();
+            app.UseAcmeChallengeListener();
             app.Run(async context => {
                 await context.Response.WriteAsync("Please fulfill the ACME challenge by requesting /.well-known/acme-challenge/{token}");
             });

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using WebApp.Internal;
 using WebApp.Options;
 
 namespace WebApp {
@@ -26,7 +27,7 @@ namespace WebApp {
            => new WebHostBuilder()
                 .UseConfiguration(HttpsSetupConfiguration(args))
                 .UseKestrel(options => options.ListenAnyIP(80))
-                .UseStartup<StartupAcme>();
+                .UseStartup<HostStartup>();
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)

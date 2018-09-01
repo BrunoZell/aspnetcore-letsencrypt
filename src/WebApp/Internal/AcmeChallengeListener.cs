@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
 namespace WebApp.Internal {
-    internal class AcmeChallengeMiddleware {
-        public AcmeChallengeMiddleware(RequestDelegate next) { }
+    internal class AcmeChallengeListener {
+        public AcmeChallengeListener(RequestDelegate next) { }
 
         public async Task InvokeAsync(HttpContext context, IHttpChallengeResponseStore responseStore) {
             string token = context.GetRouteValue("acmeToken") as string;
