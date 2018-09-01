@@ -8,5 +8,6 @@ namespace WebApp.Options {
         public TimeSpan RenewalBuffer { get; set; }
         public Certificate Certificate { get; set; }
         public CsrInfo CsrInfo { get; set; }
+        public Authority Authority { get; set; } = new Authority();
     }
 }

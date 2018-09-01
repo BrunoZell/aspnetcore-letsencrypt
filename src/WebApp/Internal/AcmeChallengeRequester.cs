@@ -14,13 +14,11 @@ namespace WebApp.Internal {
     internal class AcmeChallengeRequester : HostedService {
         private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime applicationLifetime;
-        private readonly IHostingEnvironment hostingEnvironment;
         private readonly IHttpChallengeResponseStore responseStore;
 
         public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime applicationLifetime, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
             this.options = options;
             this.applicationLifetime = applicationLifetime;
-            this.hostingEnvironment = hostingEnvironment;
             this.responseStore = responseStore;
         }
 
@@ -32,7 +30,7 @@ namespace WebApp.Internal {
                     var collection = new X509Certificate2Collection();
                     collection.Import(options.Certificate.Filename, options.Certificate.Password, X509KeyStorageFlags.PersistKeySet);
 
-                    foreach (var certificate in collection.Cast<X509Certificate2>().Where(c => c.Issuer.Equals("CN=Fake LE Root X1", StringComparison.InvariantCultureIgnoreCase))) {
+                    foreach (var certificate in collection.Cast<X509Certificate2>().Where(c => c.Issuer.Equals(options.Authority.Name, StringComparison.InvariantCultureIgnoreCase))) {
                         if (certificate.NotAfter > DateTime.Now && certificate.NotBefore < DateTime.Now) {
                             // Still valid
                             applicationLifetime.StopApplication();
@@ -47,17 +45,18 @@ namespace WebApp.Internal {
 
                 IAccountContext account;
                 IAcmeContext acme;
+                var directoryUri = new Uri(options.Authority.DirectoryUri);
 
                 if (!string.IsNullOrWhiteSpace(options.AccountKey)) {
                     // Load the saved account key
                     var accountKey = KeyFactory.FromPem(options.AccountKey);
-                    acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2, accountKey);
+                    acme = new AcmeContext(directoryUri, accountKey);
                     account = await acme.Account();
 
                 }
                 else {
                     // Create new account
-                    acme = new AcmeContext(WellKnownServers.LetsEncryptStagingV2);
+                    acme = new AcmeContext(directoryUri);
                     account = await acme.NewAccount(options.Email, true);
                     // Todo: Save the account key for later use
                     options.AccountKey = acme.AccountKey.ToPem();
