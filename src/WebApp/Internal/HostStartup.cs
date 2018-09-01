@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using WebApp.Extensions;
+using WebApp.Internal.Abstractions;
 using WebApp.Options;
 
 namespace WebApp.Internal {

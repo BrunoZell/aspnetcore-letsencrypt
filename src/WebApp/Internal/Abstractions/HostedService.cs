@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 
-namespace WebApp.Internal {
+namespace WebApp.Internal.Abstractions {
     internal abstract class HostedService : IHostedService {
         // Example untested base class code kindly provided by David Fowler: https://gist.github.com/davidfowl/a7dd5064d9dcf35b6eae1a7953d615e3
 

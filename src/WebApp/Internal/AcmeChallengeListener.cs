@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using WebApp.Internal.Abstractions;
 
 namespace WebApp.Internal {
     internal class AcmeChallengeListener {

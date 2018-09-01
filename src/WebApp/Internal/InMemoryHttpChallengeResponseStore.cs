@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using WebApp.Internal.Abstractions;
 
 namespace WebApp.Internal {
     internal class InMemoryHttpChallengeResponseStore : IHttpChallengeResponseStore {

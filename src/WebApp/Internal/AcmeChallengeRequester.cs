@@ -8,6 +8,7 @@ using Certes;
 using Certes.Acme;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
+using WebApp.Internal.Abstractions;
 using WebApp.Options;
 
 namespace WebApp.Internal {
