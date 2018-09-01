@@ -30,25 +30,11 @@ namespace WebApp.Internal {
                     return;
                 }
 
-
-                IAccountContext account;
-                IAcmeContext acme;
                 var directoryUri = new Uri(options.Authority.DirectoryUri);
+                var (acme, account) = await InitializeAccount(directoryUri, options.AccountKey);
 
-                if (!string.IsNullOrWhiteSpace(options.AccountKey)) {
-                    // Load the saved account key
-                    var accountKey = KeyFactory.FromPem(options.AccountKey);
-                    acme = new AcmeContext(directoryUri, accountKey);
-                    account = await acme.Account();
-
-                }
-                else {
-                    // Create new account
-                    acme = new AcmeContext(directoryUri);
-                    account = await acme.NewAccount(options.Email, true);
-                    // Todo: Save the account key for later use
-                    options.AccountKey = acme.AccountKey.ToPem();
-                }
+                // Todo: Save the account key for later use
+                options.AccountKey = acme.AccountKey.ToPem();
 
                 var order = await acme.NewOrder(new[] { options.Hostname });
 
@@ -84,6 +70,30 @@ namespace WebApp.Internal {
             catch (Exception) {
 
                 throw;
+            }
+        }
+
+        private static async Task<(IAcmeContext acme, IAccountContext account)> InitializeAccount(Uri directoryUri, string email, string existingAccountKey = null) {
+            if (directoryUri == null) {
+                throw new ArgumentNullException(nameof(directoryUri));
+            }
+
+            if (!string.IsNullOrWhiteSpace(existingAccountKey)) {
+                // Use the existing account
+                var accountKey = KeyFactory.FromPem(existingAccountKey);
+                var acme = new AcmeContext(directoryUri, accountKey);
+                var account = await acme.Account();
+                return (acme, account);
+            }
+            else {
+                if (email == null) {
+                    throw new ArgumentNullException(nameof(email));
+                }
+
+                // Create new account
+                var acme = new AcmeContext(directoryUri);
+                var account = await acme.NewAccount(email, true);
+                return (acme, account);
             }
         }
 
