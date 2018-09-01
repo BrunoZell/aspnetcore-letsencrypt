@@ -25,7 +25,7 @@ namespace WebApp.Internal {
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             try {
-                if (TestForValidCertificate(options.Certificate, options.Authority.Name)) {
+                if (TestForValidCertificate(options.Certificate, options.RenewalBuffer, options.Authority.Name)) {
                     // A valid certificate exists. Fast forward to the web app...
                     application.StopApplication();
                     return;
@@ -121,7 +121,7 @@ namespace WebApp.Internal {
             }
         }
 
-        private static bool TestForValidCertificate(Certificate certificate, string authorityName) {
+        private static bool TestForValidCertificate(Certificate certificate, TimeSpan renewalBuffer, string authorityName) {
             if (!File.Exists(certificate.Filename)) {
                 // Certificate does not exist yet
                 return false;
@@ -135,7 +135,7 @@ namespace WebApp.Internal {
             return existingCertificates
                 .Cast<X509Certificate2>()
                 .Where(c => c.Issuer.Equals(authorityName, StringComparison.InvariantCultureIgnoreCase))
-                .Any(c => c.NotAfter > DateTime.Now && c.NotBefore < DateTime.Now);
+                .Any(c => (c.NotAfter - renewalBuffer) > DateTime.Now && c.NotBefore < DateTime.Now);
         }
     }
 }
