@@ -43,7 +43,11 @@ namespace WebApp.Internal {
 
                 // Write pfx to file
                 byte[] cartificatePfx = await GetFinalCertificateAsPfx(order, options.CsrInfo, options.Certificate, options.Hostname);
+#if NETCOREAPP
                 await File.WriteAllBytesAsync(options.Certificate.Filename, cartificatePfx);
+#else
+                File.WriteAllBytes(options.Certificate.Filename, cartificatePfx);
+#endif
             }
             catch (Exception) {
                 // Todo: Log errors and terminate web app. Also make it configurable if to terminate or not
