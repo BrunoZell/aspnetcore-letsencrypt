@@ -1,9 +1,8 @@
-﻿using AspNetCore.LetsEncrypt.Internal;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AspNetCore.LetsEncrypt.Extensions {
+namespace AspNetCore.LetsEncrypt.Internal.Extensions {
     internal static class AcmeChallengeMiddlewareExtensions {
         public static IApplicationBuilder UseAcmeChallengeListener(this IApplicationBuilder app)
         {
