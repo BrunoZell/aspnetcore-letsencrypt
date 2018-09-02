@@ -15,11 +15,13 @@ namespace AspNetCore.LetsEncrypt.Internal {
         private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime application;
         private readonly IHttpChallengeResponseStore responseStore;
+        private readonly ErrorReporter errorReporter;
 
-        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHostingEnvironment hostingEnvironment, IHttpChallengeResponseStore responseStore) {
+        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHttpChallengeResponseStore responseStore, ErrorReporter errorReporter) {
             this.options = options;
             this.application = application;
             this.responseStore = responseStore;
+            this.errorReporter = errorReporter;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
@@ -49,12 +51,11 @@ namespace AspNetCore.LetsEncrypt.Internal {
                 File.WriteAllBytes(options.Certificate.Filename, cartificatePfx);
 #endif
             }
-            catch (Exception) {
-                // Todo: Log errors and terminate web app. Also make it configurable if to terminate or not
-                ;
+            catch (Exception ex) {
+                errorReporter.ReportException(ex);
             }
             finally {
-                // Stop intermediary application and start the web app
+                // Stop intermediary application
                 application.StopApplication();
             }
         }

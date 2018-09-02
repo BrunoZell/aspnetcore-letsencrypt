@@ -1,4 +1,6 @@
-﻿using AspNetCore.LetsEncrypt;
+﻿using System;
+using AspNetCore.LetsEncrypt;
+using AspNetCore.LetsEncrypt.Exceptions;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
@@ -12,7 +14,15 @@ namespace WebApp {
         public static void Main(string[] args) {
             var configuration = BuildConfiguration(args);
             var letsEncrypt = new LetsEncrypt(configuration.GetSection("LetsEncrypt"));
-            letsEncrypt.EnsureHttps();
+
+            try {
+                letsEncrypt.EnsureHttps();
+            }
+            catch (LetsEncryptException ex) {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.InnerException.Message);
+                return;
+            }
 
             CreateWebHostBuilder(args, letsEncrypt.Options.Certificate)
                 .Build()

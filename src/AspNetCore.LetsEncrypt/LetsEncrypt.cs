@@ -32,9 +32,12 @@ namespace AspNetCore.LetsEncrypt {
 
             // Todo: Inform over success (injected singleton maybe?)
             // Todo: Logging
-            CreateAcmeHostBuilder()
+            var errorReporter = new ErrorReporter();
+            CreateAcmeHostBuilder(errorReporter)
                 .Build()
                 .Run();
+
+            errorReporter.ThrowOnError();
         }
 
         public async Task EnsureHttpsAsync() {
@@ -42,17 +45,23 @@ namespace AspNetCore.LetsEncrypt {
                 return;
             }
 
-            await CreateAcmeHostBuilder()
+            var errorReporter = new ErrorReporter();
+            await CreateAcmeHostBuilder(errorReporter)
                 .Build()
                 .RunAsync();
+
+            errorReporter.ThrowOnError();
         }
 
         // Todo: Add ability to customize the IWebHostBuilder
-        private IWebHostBuilder CreateAcmeHostBuilder() =>
+        private IWebHostBuilder CreateAcmeHostBuilder(ErrorReporter errorReporter) =>
             new WebHostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseKestrel(options => options.ListenAnyIP(80))
-                .ConfigureServices(services => services.AddSingleton(Options))
+                .ConfigureServices(services => {
+                    services.AddSingleton(Options);
+                    services.AddSingleton(errorReporter);
+                })
                 .UseStartup<HostStartup>();
 
 

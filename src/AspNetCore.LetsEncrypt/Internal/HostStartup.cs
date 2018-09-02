@@ -11,7 +11,7 @@ namespace AspNetCore.LetsEncrypt.Internal {
         public void ConfigureServices(IServiceCollection services) {
             services.AddAcmeChallengeListener();
             services.AddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
-            services.AddSingleton<IHostedService, AcmeChallengeRequester>();
+            services.AddHostedService<AcmeChallengeRequester>();
         }
 
         public void Configure(IApplicationBuilder app) {
