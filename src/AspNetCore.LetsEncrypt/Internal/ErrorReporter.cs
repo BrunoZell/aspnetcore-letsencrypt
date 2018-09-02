@@ -2,7 +2,7 @@
 using AspNetCore.LetsEncrypt.Exceptions;
 
 namespace AspNetCore.LetsEncrypt.Internal {
-    public class ErrorReporter {
+    internal class ErrorReporter {
         private Exception reportedException;
 
         public void ReportException(Exception exception) => reportedException = exception;

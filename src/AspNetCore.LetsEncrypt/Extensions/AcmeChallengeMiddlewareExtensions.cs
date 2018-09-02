@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AspNetCore.LetsEncrypt.Extensions {
-    // Todo: Decide on whether to make this public or not
-    public static class AcmeChallengeMiddlewareExtensions {
+    internal static class AcmeChallengeMiddlewareExtensions {
         public static IApplicationBuilder UseAcmeChallengeListener(this IApplicationBuilder app) {
             var router = new RouteBuilder(app)
                 .MapMiddlewareGet("/.well-known/acme-challenge/{*acmeToken}", a => a.UseMiddleware<AcmeChallengeListener>())
