@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AspNetCore.LetsEncrypt.Exceptions {
+namespace AspNetCore.LetsEncrypt {
     public class LetsEncryptException : Exception {
         public LetsEncryptException() { }
 

@@ -1,5 +1,4 @@
-﻿using AspNetCore.LetsEncrypt.Exceptions;
-using System;
+﻿using System;
 
 namespace AspNetCore.LetsEncrypt.Internal {
     internal class ErrorReporter {

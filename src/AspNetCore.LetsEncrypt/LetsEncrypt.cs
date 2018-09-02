@@ -1,5 +1,4 @@
-﻿using AspNetCore.LetsEncrypt.Exceptions;
-using AspNetCore.LetsEncrypt.Internal;
+﻿using AspNetCore.LetsEncrypt.Internal;
 using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore.Builder;
