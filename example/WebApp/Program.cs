@@ -1,5 +1,4 @@
-﻿using System;
-using AspNetCore.LetsEncrypt;
+﻿using AspNetCore.LetsEncrypt;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
@@ -7,10 +6,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace WebApp {
     public static class Program {
-        public static void Main(string[] args) {
+        public static void Main(string[] args)
+        {
             var configuration = BuildConfiguration(args);
 
             new LetsEncryptBuilder()

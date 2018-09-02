@@ -1,6 +1,6 @@
-﻿using System.Threading;
+﻿using Microsoft.Extensions.Hosting;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 
 namespace AspNetCore.LetsEncrypt.Internal.Abstractions {
     internal abstract class HostedService : IHostedService {
@@ -9,7 +9,8 @@ namespace AspNetCore.LetsEncrypt.Internal.Abstractions {
         private Task _executingTask;
         private CancellationTokenSource _cts;
 
-        public Task StartAsync(CancellationToken cancellationToken) {
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
             // Create a linked token so we can trigger cancellation outside of this token's cancellation
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -20,7 +21,8 @@ namespace AspNetCore.LetsEncrypt.Internal.Abstractions {
             return _executingTask.IsCompleted ? _executingTask : Task.CompletedTask;
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken) {
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
             // Stop called without start
             if (_executingTask == null) {
                 return;

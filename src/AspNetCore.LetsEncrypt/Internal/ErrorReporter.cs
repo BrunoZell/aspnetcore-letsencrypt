@@ -1,15 +1,16 @@
-﻿using System;
-using AspNetCore.LetsEncrypt.Exceptions;
+﻿using AspNetCore.LetsEncrypt.Exceptions;
+using System;
 
 namespace AspNetCore.LetsEncrypt.Internal {
     internal class ErrorReporter {
-        private Exception reportedException;
+        private Exception _reportedException;
 
-        public void ReportException(Exception exception) => reportedException = exception;
+        public void ReportException(Exception exception) => _reportedException = exception;
 
-        public void ThrowOnError() {
-            if (reportedException != null) {
-                throw new LetsEncryptException("An error occured while ensuring an SSL-certificate exists.", reportedException);
+        public void ThrowOnError()
+        {
+            if (_reportedException != null) {
+                throw new LetsEncryptException("An error occured while ensuring an SSL-certificate exists.", _reportedException);
             }
         }
     }

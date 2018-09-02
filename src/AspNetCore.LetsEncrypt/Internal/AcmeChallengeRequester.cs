@@ -1,67 +1,68 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using AspNetCore.LetsEncrypt.Internal.Abstractions;
+﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
 using AspNetCore.LetsEncrypt.Options;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
 using Microsoft.AspNetCore.Hosting;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AspNetCore.LetsEncrypt.Internal {
     internal class AcmeChallengeRequester : HostedService {
-        private readonly LetsEncryptOptions options;
-        private readonly IApplicationLifetime application;
-        private readonly IHttpChallengeResponseStore responseStore;
-        private readonly ErrorReporter errorReporter;
+        private readonly LetsEncryptOptions _options;
+        private readonly IApplicationLifetime _application;
+        private readonly IHttpChallengeResponseStore _responseStore;
+        private readonly ErrorReporter _errorReporter;
 
-        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHttpChallengeResponseStore responseStore, ErrorReporter errorReporter) {
-            this.options = options;
-            this.application = application;
-            this.responseStore = responseStore;
-            this.errorReporter = errorReporter;
+        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHttpChallengeResponseStore responseStore, ErrorReporter errorReporter)
+        {
+            _options = options;
+            _application = application;
+            _responseStore = responseStore;
+            _errorReporter = errorReporter;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
             try {
-                var directoryUri = new Uri(options.Authority.DirectoryUri);
-                var (acme, account) = await InitializeAccount(directoryUri, options.Email, options.AccountKey);
+                var directoryUri = new Uri(_options.Authority.DirectoryUri);
+                var (acme, account) = await InitializeAccount(directoryUri, _options.Email, _options.AccountKey);
 
                 // Todo: Save the account key for later use
-                options.AccountKey = acme.AccountKey.ToPem();
+                _options.AccountKey = acme.AccountKey.ToPem();
 
-                var order = await acme.NewOrder(new[] { options.Hostname });
-                var authorization = ( await order.Authorizations() ).First();
+                var order = await acme.NewOrder(new[] { _options.Hostname });
+                var authorization = (await order.Authorizations()).First();
                 var httpChallenge = await authorization.Http();
 
                 // Save the expected response
-                responseStore.AddChallengeResponse(httpChallenge.Token, httpChallenge.KeyAuthz);
+                _responseStore.AddChallengeResponse(httpChallenge.Token, httpChallenge.KeyAuthz);
 
                 // Execute http challenge
                 await httpChallenge.Validate();
                 await WaitForHttpChallenge(httpChallenge);
 
                 // Write pfx to file
-                byte[] cartificatePfx = await GetFinalCertificateAsPfx(order, options.CsrInfo, options.Certificate, options.Hostname);
+                byte[] cartificatePfx = await GetFinalCertificateAsPfx(order, _options.CsrInfo, _options.Certificate, _options.Hostname);
 #if NETCOREAPP
-                await File.WriteAllBytesAsync(options.Certificate.Filename, cartificatePfx);
+                await File.WriteAllBytesAsync(_options.Certificate.Filename, cartificatePfx);
 #else
-                File.WriteAllBytes(options.Certificate.Filename, cartificatePfx);
+                File.WriteAllBytes(_options.Certificate.Filename, cartificatePfx);
 #endif
-            }
-            catch (Exception ex) {
-                errorReporter.ReportException(ex);
-            }
-            finally {
+            } catch (Exception ex) {
+                _errorReporter.ReportException(ex);
+            } finally {
                 // Stop intermediary application
-                application.StopApplication();
+                _application.StopApplication();
             }
         }
 
         // Todo: As extension method
-        private static async Task<byte[]> GetFinalCertificateAsPfx(IOrderContext order, Options.CsrInfo csrInfo, Certificate certificateInfo, string hostname) {
+        private static async Task<byte[]> GetFinalCertificateAsPfx(IOrderContext order, Options.CsrInfo csrInfo, Certificate certificateInfo, string hostname)
+        {
             // Download final certificate
             var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
             var certificate = await order.Generate(new Certes.CsrInfo {
@@ -80,7 +81,8 @@ namespace AspNetCore.LetsEncrypt.Internal {
         }
 
         // Todo: As extension method
-        private static async Task WaitForHttpChallenge(IChallengeContext context) {
+        private static async Task WaitForHttpChallenge(IChallengeContext context)
+        {
             // Get the challenges ressource to check if it's valid
             var challenge = await context.Resource();
             while (challenge.Status == ChallengeStatus.Pending || challenge.Status == ChallengeStatus.Processing) {
@@ -95,19 +97,19 @@ namespace AspNetCore.LetsEncrypt.Internal {
             }
         }
 
-        private static async Task<(IAcmeContext acme, IAccountContext account)> InitializeAccount(Uri directoryUri, string email, string existingAccountKey = null) {
+        private static async Task<(IAcmeContext acme, IAccountContext account)> InitializeAccount(Uri directoryUri, string email, string existingAccountKey = null)
+        {
             if (directoryUri == null) {
                 throw new ArgumentNullException(nameof(directoryUri));
             }
 
-            if (!string.IsNullOrWhiteSpace(existingAccountKey)) {
+            if (!String.IsNullOrWhiteSpace(existingAccountKey)) {
                 // Use the existing account
                 var accountKey = KeyFactory.FromPem(existingAccountKey);
                 var acme = new AcmeContext(directoryUri, accountKey);
                 var account = await acme.Account();
                 return (acme, account);
-            }
-            else {
+            } else {
                 if (email == null) {
                     throw new ArgumentNullException(nameof(email));
                 }

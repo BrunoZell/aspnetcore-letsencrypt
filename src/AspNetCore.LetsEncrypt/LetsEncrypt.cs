@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using AspNetCore.LetsEncrypt.Exceptions;
+﻿using AspNetCore.LetsEncrypt.Exceptions;
 using AspNetCore.LetsEncrypt.Extensions;
 using AspNetCore.LetsEncrypt.Internal;
 using AspNetCore.LetsEncrypt.Options;
@@ -10,6 +6,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
@@ -20,15 +20,16 @@ namespace AspNetCore.LetsEncrypt {
 
         // Todo: Logging
 
-        public LetsEncrypt(LetsEncryptOptions options) {
+        public LetsEncrypt(LetsEncryptOptions options)
+        {
             Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public void Run() {
+        public void Run()
+        {
             try {
                 EnsureCertificate();
-            }
-            catch (LetsEncryptException ex) {
+            } catch (LetsEncryptException ex) {
                 if (ErrorHandler != null) {
                     var errorInfo = new ErrorInfo {
                         Continue = ContinueHandler != null,
@@ -49,7 +50,8 @@ namespace AspNetCore.LetsEncrypt {
                 ?.Run();
         }
 
-        private void EnsureCertificate() {
+        private void EnsureCertificate()
+        {
             if (CheckForValidCertificate()) {
                 return;
             }
@@ -73,7 +75,8 @@ namespace AspNetCore.LetsEncrypt {
                 })
                 .UseStartup<HostStartup>();
 
-        private bool CheckForValidCertificate() {
+        private bool CheckForValidCertificate()
+        {
             if (!File.Exists(Options.Certificate.Filename)) {
                 // Certificate does not exist yet
                 return false;
@@ -87,8 +90,7 @@ namespace AspNetCore.LetsEncrypt {
             return existingCertificates
                 .Cast<X509Certificate2>()
                 .Where(c => c.Issuer.Equals(Options.Authority.Name, StringComparison.InvariantCultureIgnoreCase))
-                .Any(c => ( c.NotAfter - Options.RenewalBuffer ) > DateTime.Now && c.NotBefore < DateTime.Now);
-            // Todo: edit .editorconfig
+                .Any(c => (c.NotAfter - Options.RenewalBuffer) > DateTime.Now && c.NotBefore < DateTime.Now);
         }
     }
 }

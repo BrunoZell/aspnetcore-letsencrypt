@@ -1,13 +1,14 @@
-﻿using System.Threading.Tasks;
-using AspNetCore.LetsEncrypt.Internal.Abstractions;
+﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Threading.Tasks;
 
 namespace AspNetCore.LetsEncrypt.Internal {
     internal class AcmeChallengeListener {
         public AcmeChallengeListener(RequestDelegate next) { }
 
-        public async Task InvokeAsync(HttpContext context, IHttpChallengeResponseStore responseStore) {
+        public async Task InvokeAsync(HttpContext context, IHttpChallengeResponseStore responseStore)
+        {
             string token = context.GetRouteValue("acmeToken") as string;
             if (!responseStore.TryGetResponse(token, out string response)) {
                 await context.Response.WriteAsync("ACME challenge token invalid");

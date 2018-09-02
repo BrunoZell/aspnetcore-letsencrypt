@@ -1,5 +1,5 @@
-﻿using System.Collections.Concurrent;
-using AspNetCore.LetsEncrypt.Internal.Abstractions;
+﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
+using System.Collections.Concurrent;
 
 namespace AspNetCore.LetsEncrypt.Internal {
     internal class InMemoryHttpChallengeResponseStore : IHttpChallengeResponseStore {
