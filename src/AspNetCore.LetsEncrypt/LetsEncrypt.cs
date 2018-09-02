@@ -10,6 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
@@ -25,6 +26,7 @@ namespace AspNetCore.LetsEncrypt {
             Options = options.ArgNotNull(nameof(options));
         }
 
+        #region Synchronous
         public void Run()
         {
             try {
@@ -57,15 +59,58 @@ namespace AspNetCore.LetsEncrypt {
             }
 
             var errorReporter = new ErrorReporter();
-            CreateAcmeHostBuilder(Options, errorReporter)
+            CreateAcmeWebHostBuilder(Options, errorReporter)
                 .UseExternalConfiguration(ConfigureHandler)
                 .Build()
                 .Run();
 
             errorReporter.ThrowOnError();
         }
+        #endregion
 
-        private static IWebHostBuilder CreateAcmeHostBuilder(LetsEncryptOptions options, ErrorReporter errorReporter) =>
+        #region Asynchronuous
+        public async Task RunAsync()
+        {
+            try {
+                await EnsureCertificateAsync();
+            } catch (LetsEncryptException ex) {
+                if (ErrorHandler != null) {
+                    var errorInfo = new ErrorInfo {
+                        Continue = ContinueHandler != null,
+                        Exception = ex
+                    };
+
+                    ErrorHandler(errorInfo);
+
+                    if (!errorInfo.Continue) {
+                        ContinueHandler = null;
+                    }
+                }
+            }
+
+            // This starts the actual web app
+            await ContinueHandler
+                ?.Invoke(Options.Certificate)
+                ?.RunAsync();
+        }
+
+        private async Task EnsureCertificateAsync()
+        {
+            if (CheckForValidCertificate()) {
+                return;
+            }
+
+            var errorReporter = new ErrorReporter();
+            await CreateAcmeWebHostBuilder(Options, errorReporter)
+                .UseExternalConfiguration(ConfigureHandler)
+                .Build()
+                .RunAsync();
+
+            errorReporter.ThrowOnError();
+        }
+        #endregion
+
+        private static IWebHostBuilder CreateAcmeWebHostBuilder(LetsEncryptOptions options, ErrorReporter errorReporter) =>
             new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
