@@ -117,7 +117,7 @@ namespace AspNetCore.LetsEncrypt {
                     services.AddSingleton(options);
                     services.AddSingleton(errorReporter);
                 })
-                .UseStartup<HostStartup>();
+                .UseStartup<AcmeHostStartup>();
 
         private bool CheckForValidCertificate()
         {

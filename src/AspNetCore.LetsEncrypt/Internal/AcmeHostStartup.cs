@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace AspNetCore.LetsEncrypt.Internal {
-    internal class HostStartup {
+    internal class AcmeHostStartup {
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAcmeChallengeListener();
