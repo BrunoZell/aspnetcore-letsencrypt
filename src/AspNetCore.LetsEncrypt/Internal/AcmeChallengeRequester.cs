@@ -1,4 +1,5 @@
 ﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
+using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
 using Certes;
 using Certes.Acme;
@@ -43,10 +44,14 @@ namespace AspNetCore.LetsEncrypt.Internal {
 
                 // Execute http challenge
                 await httpChallenge.Validate();
-                await WaitForHttpChallenge(httpChallenge);
+                await httpChallenge.WaitForCompletion(TimeSpan.FromSeconds(1));
 
-                // Write pfx to file
-                byte[] cartificatePfx = await GetFinalCertificateAsPfx(order, _options.CsrInfo, _options.Certificate, _options.Hostname);
+                // Download certificate, generate pfx and write to file
+                byte[] cartificatePfx = await order.GetFinalCertificateAsPfx(
+                    _options.CsrInfo,
+                    _options.Hostname,
+                    _options.Certificate.FriendlyName,
+                    _options.Certificate.Password);
 #if NETCOREAPP
                 await File.WriteAllBytesAsync(_options.Certificate.Filename, cartificatePfx);
 #else
@@ -57,43 +62,6 @@ namespace AspNetCore.LetsEncrypt.Internal {
             } finally {
                 // Stop intermediary application
                 _application.StopApplication();
-            }
-        }
-
-        // Todo: As extension method
-        private static async Task<byte[]> GetFinalCertificateAsPfx(IOrderContext order, Options.CsrInfo csrInfo, Certificate certificateInfo, string hostname)
-        {
-            // Download final certificate
-            var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
-            var certificate = await order.Generate(new Certes.CsrInfo {
-                CountryName = csrInfo.CountryName,
-                State = csrInfo.State,
-                Locality = csrInfo.Locality,
-                Organization = csrInfo.Organization,
-                OrganizationUnit = csrInfo.OrganizationUnit,
-                CommonName = hostname
-            }, privateKey);
-
-            // Generate the pfx for file storage
-            return certificate
-                .ToPfx(privateKey)
-                .Build(certificateInfo.FriendlyName, certificateInfo.Password);
-        }
-
-        // Todo: As extension method
-        private static async Task WaitForHttpChallenge(IChallengeContext context)
-        {
-            // Get the challenges ressource to check if it's valid
-            var challenge = await context.Resource();
-            while (challenge.Status == ChallengeStatus.Pending || challenge.Status == ChallengeStatus.Processing) {
-                // If nor finished processing, poll every second
-                challenge = await context.Resource();
-                await Task.Delay(TimeSpan.FromSeconds(1));
-            }
-
-            if (challenge.Status != ChallengeStatus.Valid) {
-                // Throw if invalid
-                new Exception(challenge.Error?.Detail ?? "ACME challenge not successful.");
             }
         }
 
