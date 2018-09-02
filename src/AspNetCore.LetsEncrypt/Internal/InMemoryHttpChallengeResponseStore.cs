@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using WebApp.Internal.Abstractions;
+using AspNetCore.LetsEncrypt.Internal.Abstractions;
 
-namespace WebApp.Internal {
+namespace AspNetCore.LetsEncrypt.Internal {
     internal class InMemoryHttpChallengeResponseStore : IHttpChallengeResponseStore {
         private ConcurrentDictionary<string, string> _values = new ConcurrentDictionary<string, string>();
 

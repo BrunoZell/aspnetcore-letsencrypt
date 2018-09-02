@@ -3,14 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AspNetCore.LetsEncrypt.Internal.Abstractions;
+using AspNetCore.LetsEncrypt.Options;
 using Certes;
 using Certes.Acme;
 using Certes.Acme.Resource;
 using Microsoft.AspNetCore.Hosting;
-using WebApp.Internal.Abstractions;
-using WebApp.Options;
 
-namespace WebApp.Internal {
+namespace AspNetCore.LetsEncrypt.Internal {
     internal class AcmeChallengeRequester : HostedService {
         private readonly LetsEncryptOptions options;
         private readonly IApplicationLifetime application;

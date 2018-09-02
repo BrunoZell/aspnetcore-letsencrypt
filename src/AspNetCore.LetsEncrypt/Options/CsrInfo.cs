@@ -1,4 +1,4 @@
-﻿namespace WebApp.Options {
+﻿namespace AspNetCore.LetsEncrypt.Options {
     public class CsrInfo {
         public string CountryName { get; set; }
         public string State { get; set; }

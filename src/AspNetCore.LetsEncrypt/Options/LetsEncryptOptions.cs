@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WebApp.Options {
+namespace AspNetCore.LetsEncrypt.Options {
     public class LetsEncryptOptions {
         public string Email { get; set; }
         public string AccountKey { get; set; }

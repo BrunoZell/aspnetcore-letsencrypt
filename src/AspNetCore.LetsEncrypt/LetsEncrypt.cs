@@ -3,15 +3,15 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using AspNetCore.LetsEncrypt.Internal;
+using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using WebApp.Internal;
-using WebApp.Options;
 
-namespace WebApp {
+namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
         public LetsEncryptOptions Options { get; }
 

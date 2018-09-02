@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using WebApp.Options;
+using AspNetCore.LetsEncrypt;
+using AspNetCore.LetsEncrypt.Options;
 
 namespace WebApp {
     public class Program {

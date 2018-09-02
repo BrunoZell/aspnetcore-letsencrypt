@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
+using AspNetCore.LetsEncrypt.Internal.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using WebApp.Internal.Abstractions;
 
-namespace WebApp.Internal {
+namespace AspNetCore.LetsEncrypt.Internal {
     internal class AcmeChallengeListener {
         public AcmeChallengeListener(RequestDelegate next) { }
 

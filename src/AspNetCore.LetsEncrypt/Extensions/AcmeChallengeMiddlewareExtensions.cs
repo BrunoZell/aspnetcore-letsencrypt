@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AspNetCore.LetsEncrypt.Internal;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using WebApp.Internal;
 
-namespace WebApp.Extensions {
+namespace AspNetCore.LetsEncrypt.Extensions {
+    // Todo: Decide on whether to make this public or not
     public static class AcmeChallengeMiddlewareExtensions {
         public static IApplicationBuilder UseAcmeChallengeListener(this IApplicationBuilder app) {
             var router = new RouteBuilder(app)

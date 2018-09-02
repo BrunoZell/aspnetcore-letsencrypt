@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AspNetCore.LetsEncrypt.Extensions;
+using AspNetCore.LetsEncrypt.Internal.Abstractions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using WebApp.Extensions;
-using WebApp.Internal.Abstractions;
 
-namespace WebApp.Internal {
+namespace AspNetCore.LetsEncrypt.Internal {
     internal class HostStartup {
         public void ConfigureServices(IServiceCollection services) {
             services.AddAcmeChallengeListener();
