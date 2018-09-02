@@ -15,9 +15,8 @@ namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
         public LetsEncryptOptions Options { get; }
 
-        public LetsEncrypt(string[] args)
-            : this(BuildConfiguration(args).GetSection("LetsEncrypt")) { }
-
+        // Todo: Pass (user defined) certificate store
+        // Todo: Pass (user defined) auth-key store
         public LetsEncrypt(IConfigurationSection configurationSection)
             : this(configurationSection?.Get<LetsEncryptOptions>()) { }
 
@@ -48,6 +47,7 @@ namespace AspNetCore.LetsEncrypt {
                 .RunAsync();
         }
 
+        // Todo: Add ability to customize the IWebHostBuilder
         private IWebHostBuilder CreateAcmeHostBuilder() =>
             new WebHostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -55,12 +55,6 @@ namespace AspNetCore.LetsEncrypt {
                 .ConfigureServices(services => services.AddSingleton(Options))
                 .UseStartup<HostStartup>();
 
-        private static IConfiguration BuildConfiguration(string[] args) =>
-            new ConfigurationBuilder()
-                .AddCommandLine(args)
-                .AddEnvironmentVariables()
-                .AddJsonFile("appsettings.json", true, true)
-                .Build();
 
         private static bool TestForValidCertificate(Certificate certificate, TimeSpan renewalBuffer, string authorityName) {
             if (!File.Exists(certificate.Filename)) {

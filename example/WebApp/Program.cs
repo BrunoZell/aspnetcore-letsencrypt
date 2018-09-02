@@ -4,12 +4,14 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace WebApp {
     public class Program {
         public static void Main(string[] args) {
-            var letsEncrypt = new LetsEncrypt(args);
+            var configuration = BuildConfiguration(args);
+            var letsEncrypt = new LetsEncrypt(configuration.GetSection("LetsEncrypt"));
             letsEncrypt.EnsureHttps();
 
             CreateWebHostBuilder(args, letsEncrypt.Options.Certificate)
@@ -29,5 +31,12 @@ namespace WebApp {
                     // For simplicity we don't use a Startup-class in this example.
                     app.Run(context => context.Response.WriteAsync("Hello World!"));
                 });
+
+        private static IConfiguration BuildConfiguration(string[] args) =>
+            new ConfigurationBuilder()
+                .AddCommandLine(args)
+                .AddEnvironmentVariables()
+                .AddJsonFile("appsettings.json", true, true)
+                .Build();
     }
 }
