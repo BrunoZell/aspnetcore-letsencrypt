@@ -25,7 +25,7 @@ namespace AspNetCore.LetsEncrypt {
             // Todo: Validate some required options
         }
 
-        public void EnsureHttps() {
+        public void EnsureSslCertificate() {
             if (TestForValidCertificate(Options.Certificate, Options.RenewalBuffer, Options.Authority.Name)) {
                 return;
             }
@@ -40,7 +40,7 @@ namespace AspNetCore.LetsEncrypt {
             errorReporter.ThrowOnError();
         }
 
-        public async Task EnsureHttpsAsync() {
+        public async Task EnsureSslCertificateAsync() {
             if (TestForValidCertificate(Options.Certificate, Options.RenewalBuffer, Options.Authority.Name)) {
                 return;
             }

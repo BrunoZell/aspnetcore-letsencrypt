@@ -1,6 +1,5 @@
 ﻿using System;
 using AspNetCore.LetsEncrypt;
-using AspNetCore.LetsEncrypt.Exceptions;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
@@ -10,31 +9,29 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace WebApp {
-    public class Program {
+    public static class Program {
         public static void Main(string[] args) {
             var configuration = BuildConfiguration(args);
-            var letsEncrypt = new LetsEncrypt(configuration.GetSection("LetsEncrypt"));
 
-            try {
-                letsEncrypt.EnsureHttps();
-            }
-            catch (LetsEncryptException ex) {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.InnerException.Message);
-                return;
-            }
-
-            CreateWebHostBuilder(args, letsEncrypt.Options.Certificate)
-                .Build()
-                .Run();
+            new LetsEncryptBuilder()
+                //.WithOptions(o => {
+                //    o.Hostname = "";
+                //})
+                .WithConfiguration(configuration.GetSection("LetsEncrypt"))
+                .OnError(o => {
+                    o.Continue = true;
+                    Console.WriteLine(o.Exception.Message);
+                })
+                .ContinueWith((Certificate cert) => CreateWebHostBuilder(args, cert).Build())
+                .Run(); // OR .RunAsync()
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args, Certificate httpsCertificate) =>
+        private static IWebHostBuilder CreateWebHostBuilder(string[] args, Certificate sslCertificate) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseUrls() // Remove warning for overridden settings by UseKestrel.
                 .UseKestrel(options => {
                     options.ListenAnyIP(80);
-                    options.ListenAnyIP(443, o => o.UseHttps(httpsCertificate.Filename, httpsCertificate.Password));
+                    options.ListenAnyIP(443, o => o.UseHttps(sslCertificate.Filename, sslCertificate.Password));
                 })
                 .Configure(app => {
                     // Return "Hello World!" on every request.
