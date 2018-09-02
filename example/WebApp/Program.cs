@@ -14,21 +14,25 @@ namespace WebApp {
             var configuration = BuildConfiguration(args);
 
             new LetsEncryptBuilder()
-                //.WithOptions(o => {
-                //    o.Hostname = "";
-                //})
                 .WithConfiguration(configuration.GetSection("LetsEncrypt"))
+                .WithOptions(o => {
+                    // Overwrite some options provided by WithConfiguration
+                    //o.Hostname = "";
+                })
+                .ConfigureWebHost(builder => {
+                })
                 .OnError(o => {
-                    o.Continue = true;
+                    o.Continue = false;
                     Console.WriteLine(o.Exception.Message);
                 })
-                .ContinueWith((Certificate cert) => CreateWebHostBuilder(args, cert).Build())
+                .ContinueWith(cert => CreateWebHostBuilder(args, cert).Build())
+                .Build()
                 .Run(); // OR .RunAsync()
         }
 
         private static IWebHostBuilder CreateWebHostBuilder(string[] args, Certificate sslCertificate) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseUrls() // Remove warning for overridden settings by UseKestrel.
+                .UseUrls() // Removes warning for overridden settings by UseKestrel.
                 .UseKestrel(options => {
                     options.ListenAnyIP(80);
                     options.ListenAnyIP(443, o => o.UseHttps(sslCertificate.Filename, sslCertificate.Password));

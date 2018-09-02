@@ -1,5 +1,4 @@
 ﻿using System;
-using AspNetCore.LetsEncrypt.Exceptions;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -8,8 +7,13 @@ namespace AspNetCore.LetsEncrypt {
     public class LetsEncryptBuilder {
         private Action<LetsEncryptOptions> configureAction;
         private IConfigurationSection configurationSection;
+        private Action<IWebHostBuilder> configureHandler;
         private Action<ErrorInfo> errorHandler;
         private Func<Certificate, IWebHost> continueHandler;
+
+        // Todo: Pass (user defined) certificate store
+        // Todo: Pass (user defined) auth-key store
+        // Todo: Validate some required options
 
         public LetsEncryptBuilder WithOptions(Action<LetsEncryptOptions> configureAction) {
             this.configureAction = configureAction;
@@ -18,6 +22,11 @@ namespace AspNetCore.LetsEncrypt {
 
         public LetsEncryptBuilder WithConfiguration(IConfigurationSection configurationSection) {
             this.configurationSection = configurationSection;
+            return this;
+        }
+
+        public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureHandler) {
+            this.configureHandler = configureHandler;
             return this;
         }
 
@@ -31,45 +40,22 @@ namespace AspNetCore.LetsEncrypt {
             return this;
         }
 
-        public void Run() {
-            var letsEncrypt = BuildLetsEncrypt();
-
-            try {
-                letsEncrypt.EnsureSslCertificate();
-            }
-            catch (LetsEncryptException ex) {
-                if (errorHandler != null) {
-                    var errorInfo = new ErrorInfo {
-                        Continue = continueHandler != null,
-                        Exception = ex
-                    };
-
-                    errorHandler(errorInfo);
-
-                    if (!errorInfo.Continue) {
-                        continueHandler = null;
-                    }
-                }
+        public LetsEncrypt Build() {
+            if (configurationSection == null && configureAction == null) {
+                throw new Exception($"Lets Encrypt is not configured. Configure by invoking either {nameof(LetsEncryptBuilder.WithConfiguration)}() or {nameof(LetsEncryptBuilder.WithOptions)}().");
             }
 
-            continueHandler?.Invoke(letsEncrypt.Options.Certificate)?.Run();
-        }
+            var options = configurationSection != null ?
+                configurationSection.Get<LetsEncryptOptions>() :
+                new LetsEncryptOptions();
 
-        // Todo: RunAsync
+            configureAction?.Invoke(options);
 
-        private LetsEncrypt BuildLetsEncrypt() {
-            // Todo: If both are specified, use the action to overwrite IConfigurationSection
-            if (configureAction != null) {
-                var options = new LetsEncryptOptions();
-                configureAction(options);
-                return new LetsEncrypt(options);
-            }
-
-            if (configurationSection != null) {
-                return new LetsEncrypt(configurationSection);
-            }
-
-            throw new Exception($"Lets Encrypt is not configured. Configure by invoking either {nameof(LetsEncryptBuilder.WithConfiguration)}() or {nameof(LetsEncryptBuilder.WithOptions)}().");
+            return new LetsEncrypt(options) {
+                ConfigureHandler = configureHandler,
+                ErrorHandler = errorHandler,
+                ContinueHandler = continueHandler
+            };
         }
     }
 }
