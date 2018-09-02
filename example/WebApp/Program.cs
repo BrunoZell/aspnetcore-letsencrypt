@@ -37,6 +37,7 @@ namespace WebApp {
                 .AddCommandLine(args)
                 .AddEnvironmentVariables()
                 .AddJsonFile("appsettings.json", true, true)
+                .AddJsonFile("appsettings.Development.json", true, true)
                 .Build();
     }
 }
