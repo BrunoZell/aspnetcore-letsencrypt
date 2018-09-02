@@ -6,6 +6,11 @@ namespace AspNetCore.LetsEncrypt.Internal.Extensions {
     internal static class OrderContextExtensions {
         public static async Task<byte[]> GetFinalCertificateAsPfx(this IOrderContext orderContext, Options.CsrInfo csrInfo, string hostname, string friendlyName, string password)
         {
+            csrInfo.ArgNotNull(nameof(csrInfo));
+            hostname.ArgNotNull(nameof(hostname));
+            friendlyName.ArgNotNull(nameof(friendlyName));
+            password.ArgNotNull(nameof(password));
+
             // Download final certificate
             var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
             var certificate = await orderContext.Generate(new CsrInfo {

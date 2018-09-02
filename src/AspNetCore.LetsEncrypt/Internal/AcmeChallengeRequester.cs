@@ -3,7 +3,6 @@ using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
 using Certes;
 using Certes.Acme;
-using Certes.Acme.Resource;
 using Microsoft.AspNetCore.Hosting;
 using System;
 using System.IO;
@@ -18,7 +17,11 @@ namespace AspNetCore.LetsEncrypt.Internal {
         private readonly IHttpChallengeResponseStore _responseStore;
         private readonly ErrorReporter _errorReporter;
 
-        public AcmeChallengeRequester(LetsEncryptOptions options, IApplicationLifetime application, IHttpChallengeResponseStore responseStore, ErrorReporter errorReporter)
+        public AcmeChallengeRequester(
+            LetsEncryptOptions options,
+            IApplicationLifetime application,
+            IHttpChallengeResponseStore responseStore,
+            ErrorReporter errorReporter)
         {
             _options = options;
             _application = application;

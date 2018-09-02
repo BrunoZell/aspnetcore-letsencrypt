@@ -1,6 +1,6 @@
 ﻿using AspNetCore.LetsEncrypt.Exceptions;
-using AspNetCore.LetsEncrypt.Extensions;
 using AspNetCore.LetsEncrypt.Internal;
+using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,7 +22,7 @@ namespace AspNetCore.LetsEncrypt {
 
         public LetsEncrypt(LetsEncryptOptions options)
         {
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            Options = options.ArgNotNull(nameof(options));
         }
 
         public void Run()

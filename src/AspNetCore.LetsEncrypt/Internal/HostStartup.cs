@@ -1,5 +1,5 @@
-﻿using AspNetCore.LetsEncrypt.Extensions;
-using AspNetCore.LetsEncrypt.Internal.Abstractions;
+﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
+using AspNetCore.LetsEncrypt.Internal.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

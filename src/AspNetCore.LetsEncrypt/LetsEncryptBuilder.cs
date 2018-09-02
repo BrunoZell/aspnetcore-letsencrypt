@@ -18,31 +18,31 @@ namespace AspNetCore.LetsEncrypt {
 
         public LetsEncryptBuilder WithOptions(Action<LetsEncryptOptions> configureAction)
         {
-            _configureAction = configureAction;
+            _configureAction = configureAction.ArgNotNull(nameof(configureAction));
             return this;
         }
 
         public LetsEncryptBuilder WithConfiguration(IConfigurationSection configurationSection)
         {
-            _configurationSection = configurationSection;
+            _configurationSection = configurationSection.ArgNotNull(nameof(configurationSection));
             return this;
         }
 
         public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureHandler)
         {
-            _configureHandler = configureHandler;
+            _configureHandler = configureHandler.ArgNotNull(nameof(configureHandler));
             return this;
         }
 
         public LetsEncryptBuilder OnError(Action<ErrorInfo> errorHandler)
         {
-            _errorHandler = errorHandler;
+            _errorHandler = errorHandler.ArgNotNull(nameof(errorHandler));
             return this;
         }
 
         public LetsEncryptBuilder ContinueWith(Func<Certificate, IWebHost> continueHandler)
         {
-            _continueHandler = continueHandler;
+            _continueHandler = continueHandler.ArgNotNull(nameof(continueHandler));
             return this;
         }
 

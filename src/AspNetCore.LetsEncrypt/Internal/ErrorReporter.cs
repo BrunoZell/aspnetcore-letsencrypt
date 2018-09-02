@@ -10,7 +10,7 @@ namespace AspNetCore.LetsEncrypt.Internal {
         public void ThrowOnError()
         {
             if (_reportedException != null) {
-                throw new LetsEncryptException("An error occured while ensuring an SSL-certificate exists.", _reportedException);
+                throw new LetsEncryptException("An error occured while ensuring a valid Let's Encrypt SSL certificate. More info in inner Exception", _reportedException);
             }
         }
     }
