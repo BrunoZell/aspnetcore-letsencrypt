@@ -1,18 +1,21 @@
 ﻿using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
+using AspNetCore.LetsEncrypt.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Security.Cryptography.X509Certificates;
 
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncryptBuilder {
         private Action<LetsEncryptOptions> _configureAction;
         private IConfigurationSection _configurationSection;
+        private ICertificateSaver _certificateSaver;
+        private ICertificateLoader _certificateLoader;
         private Action<IWebHostBuilder> _configureHandler;
         private Action<ErrorInfo> _errorHandler;
-        private Func<Certificate, IWebHost> _continueHandler;
+        private Func<X509Certificate2, IWebHost> _continueHandler;
 
-        // Todo: Pass (user defined) certificate store
         // Todo: Pass (user defined) auth-key store
 
         public LetsEncryptBuilder WithOptions(Action<LetsEncryptOptions> configureAction)
@@ -27,8 +30,21 @@ namespace AspNetCore.LetsEncrypt {
             return this;
         }
 
+        public LetsEncryptBuilder UseCertificateSaver(ICertificateSaver certificateSaver)
+        {
+            _certificateSaver = certificateSaver.ArgNotNull(nameof(certificateSaver));
+            return this;
+        }
+
+        public LetsEncryptBuilder UseCertificateLoader(ICertificateLoader certificateLoader)
+        {
+            _certificateLoader = certificateLoader.ArgNotNull(nameof(certificateLoader));
+            return this;
+        }
+
         public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureHandler)
         {
+            // Todo: Use IHostingStartup instead
             _configureHandler = configureHandler.ArgNotNull(nameof(configureHandler));
             return this;
         }
@@ -39,7 +55,7 @@ namespace AspNetCore.LetsEncrypt {
             return this;
         }
 
-        public LetsEncryptBuilder ContinueWith(Func<Certificate, IWebHost> continueHandler)
+        public LetsEncryptBuilder ContinueWith(Func<X509Certificate2, IWebHost> continueHandler)
         {
             _continueHandler = continueHandler.ArgNotNull(nameof(continueHandler));
             return this;
@@ -64,7 +80,9 @@ namespace AspNetCore.LetsEncrypt {
             return new LetsEncrypt(options) {
                 ConfigureHandler = _configureHandler,
                 ErrorHandler = _errorHandler,
-                ContinueHandler = _continueHandler
+                ContinueHandler = _continueHandler,
+                CertificateLoader = _certificateLoader,
+                CertificateSaver = _certificateSaver
             };
         }
 
@@ -73,17 +91,13 @@ namespace AspNetCore.LetsEncrypt {
             options.ArgNotNull(nameof(options));
 
             // Validate options
-            options.Hostname.OptionNotBlank(nameof(LetsEncryptOptions.Hostname));
             options.Email.OptionNotBlank(nameof(LetsEncryptOptions.Email));
+            options.Hostname.OptionNotBlank(nameof(LetsEncryptOptions.Hostname));
+            options.FriendlyName.OptionNotBlank(nameof(LetsEncryptOptions.FriendlyName));
 
             // Validate authority options
             options.Authority?.Name.OptionNotBlank($"{nameof(LetsEncryptOptions.Authority)}.{nameof(Authority.Name)}");
             options.Authority?.DirectoryUri.OptionNotBlank($"{nameof(LetsEncryptOptions.Authority)}.{nameof(Authority.DirectoryUri)}");
-
-            // Validate certificate options
-            options.Certificate?.Filename.OptionNotBlank($"{nameof(LetsEncryptOptions.Certificate)}.{nameof(Certificate.Filename)}");
-            options.Certificate?.FriendlyName.OptionNotNull($"{nameof(LetsEncryptOptions.Certificate)}.{nameof(Certificate.FriendlyName)}");
-            options.Certificate?.Password.OptionNotNull($"{nameof(LetsEncryptOptions.Certificate)}.{nameof(Certificate.Password)}");
 
             // Validate certificate signing request (CSR) options
             options.CsrInfo?.CountryName.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.CountryName)}");

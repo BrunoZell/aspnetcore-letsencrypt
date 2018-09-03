@@ -1,13 +1,13 @@
 ﻿using AspNetCore.LetsEncrypt.Internal;
 using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
+using AspNetCore.LetsEncrypt.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -15,8 +15,10 @@ namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
         public LetsEncryptOptions Options { get; internal set; }
         internal Action<IWebHostBuilder> ConfigureHandler { get; set; }
+        internal ICertificateSaver CertificateSaver { get; set; }
+        internal ICertificateLoader CertificateLoader { get; set; }
         internal Action<ErrorInfo> ErrorHandler { get; set; }
-        internal Func<Certificate, IWebHost> ContinueHandler { get; set; }
+        internal Func<X509Certificate2, IWebHost> ContinueHandler { get; set; }
 
         // Todo: Logging
 
@@ -45,9 +47,13 @@ namespace AspNetCore.LetsEncrypt {
                 }
             }
 
+            // Retrieve the certificate from loader
+            X509Certificate2 certificate = null;
+            CertificateLoader?.TryLoad(Options.Hostname, out certificate);
+
             // This starts the actual web app
             ContinueHandler
-                ?.Invoke(Options.Certificate)
+                ?.Invoke(certificate)
                 ?.Run();
         }
 
@@ -58,7 +64,7 @@ namespace AspNetCore.LetsEncrypt {
             }
 
             var errorReporter = new ErrorReporter();
-            CreateAcmeWebHostBuilder(Options, errorReporter)
+            CreateAcmeWebHostBuilder(errorReporter)
                 .UseExternalConfiguration(ConfigureHandler)
                 .Build()
                 .Run();
@@ -87,9 +93,13 @@ namespace AspNetCore.LetsEncrypt {
                 }
             }
 
+            // Retrieve the certificate from loader
+            X509Certificate2 certificate = null;
+            CertificateLoader?.TryLoad(Options.Hostname, out certificate);
+
             // This starts the actual web app
             await ContinueHandler
-                ?.Invoke(Options.Certificate)
+                ?.Invoke(certificate)
                 ?.RunAsync();
         }
 
@@ -100,7 +110,7 @@ namespace AspNetCore.LetsEncrypt {
             }
 
             var errorReporter = new ErrorReporter();
-            await CreateAcmeWebHostBuilder(Options, errorReporter)
+            await CreateAcmeWebHostBuilder(errorReporter)
                 .UseExternalConfiguration(ConfigureHandler)
                 .Build()
                 .RunAsync();
@@ -109,32 +119,28 @@ namespace AspNetCore.LetsEncrypt {
         }
         #endregion
 
-        private static IWebHostBuilder CreateAcmeWebHostBuilder(LetsEncryptOptions options, ErrorReporter errorReporter) =>
+        private IWebHostBuilder CreateAcmeWebHostBuilder(ErrorReporter errorReporter) =>
             new WebHostBuilder()
-                .UseKestrel()
+                .UseKestrel(options => options.ListenAnyIP(80))
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureServices(services => {
-                    services.AddSingleton(options);
+                    services.AddSingleton(Options);
                     services.AddSingleton(errorReporter);
+                    services.AddSingleton(CertificateSaver);
+                    services.AddSingleton(CertificateLoader);
                 })
                 .UseStartup<AcmeHostStartup>();
 
         private bool CheckForValidCertificate()
         {
-            if (!File.Exists(Options.Certificate.Filename)) {
+            if (!CertificateLoader.TryLoad(Options.Hostname, out var certificate)) {
                 // Certificate does not exist yet
                 return false;
             }
-
-            // Certificate exists already
-            var existingCertificates = new X509Certificate2Collection();
-            existingCertificates.Import(Options.Certificate.Filename, Options.Certificate.Password, X509KeyStorageFlags.PersistKeySet);
-
-            // Test if a certificate is issued by the specified authority and whether it's not expired
-            return existingCertificates
-                .Cast<X509Certificate2>()
-                .Where(c => c.Issuer.Equals(Options.Authority.Name, StringComparison.InvariantCultureIgnoreCase))
-                .Any(c => (c.NotAfter - Options.RenewalBuffer) > DateTime.Now && c.NotBefore < DateTime.Now);
+            
+            // Test if the certificate is issued by the specified authority and whether it's not expired
+            return certificate.Issuer.Equals(Options.Authority.Name, StringComparison.InvariantCultureIgnoreCase) &&
+                (certificate.NotAfter - Options.RenewalBuffer) > DateTime.Now && certificate.NotBefore < DateTime.Now;
         }
     }
 }

@@ -1,15 +1,16 @@
 ﻿using Certes;
 using Certes.Acme;
+using System;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace AspNetCore.LetsEncrypt.Internal.Extensions {
     internal static class OrderContextExtensions {
-        public static async Task<byte[]> GetFinalCertificateAsPfx(this IOrderContext orderContext, Options.CsrInfo csrInfo, string hostname, string friendlyName, string password)
+        public static async Task<X509Certificate2> GetFinalCertificate(this IOrderContext orderContext, Options.CsrInfo csrInfo, string commonName, string friendlyName)
         {
             csrInfo.ArgNotNull(nameof(csrInfo));
-            hostname.ArgNotNull(nameof(hostname));
+            commonName.ArgNotNull(nameof(commonName));
             friendlyName.ArgNotNull(nameof(friendlyName));
-            password.ArgNotNull(nameof(password));
 
             // Download final certificate
             var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
@@ -19,13 +20,17 @@ namespace AspNetCore.LetsEncrypt.Internal.Extensions {
                 Locality = csrInfo.Locality,
                 Organization = csrInfo.Organization,
                 OrganizationUnit = csrInfo.OrganizationUnit,
-                CommonName = hostname
+                CommonName = commonName
             }, privateKey);
 
-            // Generate the pfx for file storage
-            return certificate
+            // Generate pfx and then load it into a X509Certificate2 class.
+            // Havent found a conversion to X509Certificate2 without the need for a password...
+            string tempPassword = Guid.NewGuid().ToString();
+            byte[] pfx = certificate
                 .ToPfx(privateKey)
-                .Build(friendlyName, password);
+                .Build(friendlyName, tempPassword);
+
+            return new X509Certificate2(pfx, tempPassword);
         }
     }
 }

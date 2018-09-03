@@ -1,11 +1,11 @@
 ﻿using AspNetCore.LetsEncrypt.Internal.Abstractions;
 using AspNetCore.LetsEncrypt.Internal.Extensions;
 using AspNetCore.LetsEncrypt.Options;
+using AspNetCore.LetsEncrypt.Persistence;
 using Certes;
 using Certes.Acme;
 using Microsoft.AspNetCore.Hosting;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,17 +15,20 @@ namespace AspNetCore.LetsEncrypt.Internal {
         private readonly LetsEncryptOptions _options;
         private readonly IApplicationLifetime _application;
         private readonly IHttpChallengeResponseStore _responseStore;
+        private readonly ICertificateSaver _certificateSaver;
         private readonly ErrorReporter _errorReporter;
 
         public AcmeChallengeRequester(
             LetsEncryptOptions options,
             IApplicationLifetime application,
             IHttpChallengeResponseStore responseStore,
+            ICertificateSaver certificateSaver,
             ErrorReporter errorReporter)
         {
             _options = options;
             _application = application;
             _responseStore = responseStore;
+            _certificateSaver = certificateSaver;
             _errorReporter = errorReporter;
         }
 
@@ -50,16 +53,12 @@ namespace AspNetCore.LetsEncrypt.Internal {
                 await httpChallenge.WaitForCompletion(TimeSpan.FromSeconds(1));
 
                 // Download certificate, generate pfx and write to file
-                byte[] cartificatePfx = await order.GetFinalCertificateAsPfx(
+                var certificate = await order.GetFinalCertificate(
                     _options.CsrInfo,
                     _options.Hostname,
-                    _options.Certificate.FriendlyName,
-                    _options.Certificate.Password);
-#if NETCOREAPP
-                await File.WriteAllBytesAsync(_options.Certificate.Filename, cartificatePfx);
-#else
-                File.WriteAllBytes(_options.Certificate.Filename, cartificatePfx);
-#endif
+                    _options.FriendlyName);
+
+                _certificateSaver.Save(certificate, _options.Hostname);
             } catch (Exception ex) {
                 _errorReporter.ReportException(ex);
             } finally {
