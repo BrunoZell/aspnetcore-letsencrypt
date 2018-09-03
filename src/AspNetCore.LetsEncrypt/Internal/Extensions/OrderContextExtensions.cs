@@ -8,18 +8,17 @@ namespace AspNetCore.LetsEncrypt.Internal.Extensions {
     internal static class OrderContextExtensions {
         public static async Task<X509Certificate2> GetFinalCertificate(this IOrderContext orderContext, Options.CsrInfo csrInfo, string commonName, string friendlyName)
         {
-            csrInfo.ArgNotNull(nameof(csrInfo));
             commonName.ArgNotNull(nameof(commonName));
             friendlyName.ArgNotNull(nameof(friendlyName));
 
             // Download final certificate
             var privateKey = KeyFactory.NewKey(KeyAlgorithm.ES256);
             var certificate = await orderContext.Generate(new CsrInfo {
-                CountryName = csrInfo.CountryName,
-                State = csrInfo.State,
-                Locality = csrInfo.Locality,
-                Organization = csrInfo.Organization,
-                OrganizationUnit = csrInfo.OrganizationUnit,
+                CountryName = csrInfo?.CountryName,
+                State = csrInfo?.State,
+                Locality = csrInfo?.Locality,
+                Organization = csrInfo?.Organization,
+                OrganizationUnit = csrInfo?.OrganizationUnit,
                 CommonName = commonName
             }, privateKey);
 

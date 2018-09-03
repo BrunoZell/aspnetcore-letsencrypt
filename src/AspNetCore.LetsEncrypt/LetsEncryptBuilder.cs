@@ -120,13 +120,6 @@ namespace AspNetCore.LetsEncrypt {
             // Validate authority options
             options.Authority?.Name.OptionNotBlank($"{nameof(LetsEncryptOptions.Authority)}.{nameof(Authority.Name)}");
             options.Authority?.DirectoryUri.OptionNotBlank($"{nameof(LetsEncryptOptions.Authority)}.{nameof(Authority.DirectoryUri)}");
-
-            // Validate certificate signing request (CSR) options
-            options.CsrInfo?.CountryName.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.CountryName)}");
-            options.CsrInfo?.State.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.State)}");
-            options.CsrInfo?.Locality.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.Locality)}");
-            options.CsrInfo?.Organization.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.Organization)}");
-            options.CsrInfo?.OrganizationUnit.OptionNotNull($"{nameof(LetsEncryptOptions.CsrInfo)}.{nameof(CsrInfo.OrganizationUnit)}");
         }
     }
 }
