@@ -30,7 +30,7 @@ namespace AspNetCore.LetsEncrypt.Internal.Extensions {
                 .ToPfx(privateKey)
                 .Build(friendlyName, tempPassword);
 
-            return new X509Certificate2(pfx, tempPassword);
+            return new X509Certificate2(pfx, tempPassword, X509KeyStorageFlags.Exportable);
         }
     }
 }

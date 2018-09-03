@@ -11,15 +11,13 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace WebApp {
     public static class Program {
-        public static void Main(string[] args)
-        {
-            var store = new InMemoryCertificateStore();
+        public static void Main(string[] args) =>
             new LetsEncryptBuilder()
                 .WithConfiguration(BuildConfiguration(args).GetSection("LetsEncrypt")) // See appsettings.json for structure
                 .WithOptions(options => {
                     // Here you can overwrite some options provided by WithConfiguration(..).
                     // Or don't use WithConfiguration(..) at all and configure everything in code here.
-                    options.Hostname = "3bc29e11.ngrok.io";
+                    options.Hostname = "f2e393d1.ngrok.io";
                 })
                 .ConfigureWebHost(builder => {
                     // For the ACME chellenge a small Kestrel-server is hosted before the actual web app starts up.
@@ -28,16 +26,15 @@ namespace WebApp {
                 .OnError(options => {
                     // Get more information about the error
                     Console.WriteLine(options.Exception.InnerException.Message);
-                
+
                     // Whether to start the web app configured in ContinueWith(..) anyways
                     options.Continue = true;
                 })
-                .UseCertificateLoader(store.Loader)
-                .UseCertificateSaver(store.Saver)
+                .UseCertificateSaver(new FileCertificateSaver("cert.pfx", X509ContentType.Pfx, "password"))
+                .UseCertificateLoader(new FileCertificateLoader("cert.pfx", "password"))
                 .ContinueWith(certificate => CreateWebHostBuilder(args, certificate).Build())
                 .Build()
                 .Run(); // OR .RunAsync()
-        }
 
         private static IWebHostBuilder CreateWebHostBuilder(string[] args, X509Certificate2 certificate) =>
             WebHost.CreateDefaultBuilder(args)

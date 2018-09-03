@@ -137,8 +137,9 @@ namespace AspNetCore.LetsEncrypt {
                 // Certificate does not exist yet
                 return false;
             }
-            
+
             // Test if the certificate is issued by the specified authority and whether it's not expired
+            // Todo: Maybe call certificate.Verify
             return certificate.Issuer.Equals(Options.Authority.Name, StringComparison.InvariantCultureIgnoreCase) &&
                 (certificate.NotAfter - Options.RenewalBuffer) > DateTime.Now && certificate.NotBefore < DateTime.Now;
         }

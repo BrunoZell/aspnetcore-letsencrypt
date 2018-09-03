@@ -44,7 +44,6 @@ namespace AspNetCore.LetsEncrypt {
 
         public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureHandler)
         {
-            // Todo: Use IHostingStartup instead
             _configureHandler = configureHandler.ArgNotNull(nameof(configureHandler));
             return this;
         }
