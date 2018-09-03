@@ -63,7 +63,21 @@ namespace AspNetCore.LetsEncrypt {
         public LetsEncrypt Build()
         {
             if (_configurationSection == null && _configureAction == null) {
-                throw new LetsEncryptException($"Lets Encrypt is not configured. Configure by invoking either {nameof(LetsEncryptBuilder.WithConfiguration)}() or {nameof(LetsEncryptBuilder.WithOptions)}().");
+                throw new LetsEncryptException($"Lets Encrypt is not configured. " +
+                    $"Configure by invoking either {nameof(WithConfiguration)}() " +
+                    $"or {nameof(WithOptions)}() on {nameof(LetsEncryptBuilder)}.");
+            }
+
+            if (_certificateLoader == null) {
+                throw new LetsEncryptException($"No certificate loader is configured. Certificate loaders " +
+                    $"implement {nameof(ICertificateLoader)} and are used to read already existing certificates. Reference one by " +
+                    $"invoking {nameof(UseCertificateLoader)}() on {nameof(LetsEncryptBuilder)}.");
+            }
+
+            if (_certificateSaver == null) {
+                throw new LetsEncryptException($"No certificate saver is configured. Certificate savers " +
+                    $"implement {nameof(ICertificateSaver)} and are used to store the acuired certificate for " +
+                    $"later use. Reference one by invoking {nameof(UseCertificateSaver)}() on {nameof(LetsEncryptBuilder)}.");
             }
 
             // Get options by (1) parse the passed configuration, if any...

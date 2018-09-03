@@ -48,8 +48,7 @@ namespace AspNetCore.LetsEncrypt {
             }
 
             // Retrieve the certificate from loader
-            X509Certificate2 certificate = null;
-            CertificateLoader?.TryLoad(Options.Hostname, out certificate);
+            CertificateLoader.TryLoad(Options.Hostname, out var certificate);
 
             // This starts the actual web app
             ContinueHandler
@@ -94,8 +93,7 @@ namespace AspNetCore.LetsEncrypt {
             }
 
             // Retrieve the certificate from loader
-            X509Certificate2 certificate = null;
-            CertificateLoader?.TryLoad(Options.Hostname, out certificate);
+            CertificateLoader.TryLoad(Options.Hostname, out var certificate);
 
             // This starts the actual web app
             await ContinueHandler
