@@ -3,11 +3,13 @@ using AspNetCore.LetsEncrypt.Options;
 using AspNetCore.LetsEncrypt.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Security.Cryptography.X509Certificates;
 
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncryptBuilder {
+        private ILogger _logger;
         private IConfigurationSection _configurationSection;
         private Action<LetsEncryptOptions> _configureOptionsHandler;
         private Action<IWebHostBuilder> _configureWebHostHandler;
@@ -17,6 +19,12 @@ namespace AspNetCore.LetsEncrypt {
         private Func<X509Certificate2, IWebHost> _continueHandler;
 
         // Todo: Pass (user defined) auth-key store
+
+        public LetsEncryptBuilder UseLogger(ILogger logger)
+        {
+            _logger = logger.ArgNotNull(nameof(logger));
+            return this;
+        }
 
         public LetsEncryptBuilder WithConfiguration(IConfigurationSection configurationSection)
         {
@@ -95,7 +103,8 @@ namespace AspNetCore.LetsEncrypt {
                 ErrorHandler = _errorHandler,
                 ContinueHandler = _continueHandler,
                 CertificateLoader = _certificateLoader,
-                CertificateSaver = _certificateSaver
+                CertificateSaver = _certificateSaver,
+                Logger = _logger
             };
         }
 

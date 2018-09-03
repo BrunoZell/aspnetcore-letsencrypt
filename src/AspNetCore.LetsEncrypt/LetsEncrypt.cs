@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
@@ -19,8 +20,7 @@ namespace AspNetCore.LetsEncrypt {
         internal ICertificateLoader CertificateLoader { get; set; }
         internal Action<ErrorInfo> ErrorHandler { get; set; }
         internal Func<X509Certificate2, IWebHost> ContinueHandler { get; set; }
-
-        // Todo: Logging
+        internal ILogger Logger { get; set; }
 
         public LetsEncrypt(LetsEncryptOptions options)
         {
@@ -33,6 +33,8 @@ namespace AspNetCore.LetsEncrypt {
             try {
                 EnsureCertificate();
             } catch (LetsEncryptException ex) {
+                Logger?.LogError(ex, ex.InnerException?.Message);
+
                 if (ErrorHandler != null) {
                     var errorInfo = new ErrorInfo {
                         Continue = ContinueHandler != null,
@@ -126,15 +128,23 @@ namespace AspNetCore.LetsEncrypt {
                     services.AddSingleton(errorReporter);
                     services.AddSingleton(CertificateSaver);
                     services.AddSingleton(CertificateLoader);
+                    if (Logger != null)
+                        services.AddSingleton(Logger);
                 })
                 .UseStartup<AcmeHostStartup>();
 
         private bool CheckForValidCertificate()
         {
+            Logger?.LogDebug("Try loading existing SSL certificate...");
             if (!CertificateLoader.TryLoad(Options.Hostname, out var certificate)) {
+                Logger?.LogWarning("Certificate loader found no existing SSL certificate.");
                 // Certificate does not exist yet
                 return false;
             }
+
+            Logger?.LogInformation("Existing certificate found. Issuer: '{issuer}'; Expires (local time): {expiring}",
+                certificate.Issuer,
+                certificate.NotAfter);
 
             // Test if the certificate is issued by the specified authority and whether it's not expired
             // Todo: Maybe call certificate.Verify
