@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncrypt {
         public LetsEncryptOptions Options { get; internal set; }
-        internal Action<IWebHostBuilder> ConfigureHandler { get; set; }
+        internal Action<IWebHostBuilder> ConfigureWebHostHandler { get; set; }
         internal ICertificateSaver CertificateSaver { get; set; }
         internal ICertificateLoader CertificateLoader { get; set; }
         internal Action<ErrorInfo> ErrorHandler { get; set; }
@@ -64,7 +64,7 @@ namespace AspNetCore.LetsEncrypt {
 
             var errorReporter = new ErrorReporter();
             CreateAcmeWebHostBuilder(errorReporter)
-                .UseExternalConfiguration(ConfigureHandler)
+                .UseExternalConfiguration(ConfigureWebHostHandler)
                 .Build()
                 .Run();
 
@@ -109,7 +109,7 @@ namespace AspNetCore.LetsEncrypt {
 
             var errorReporter = new ErrorReporter();
             await CreateAcmeWebHostBuilder(errorReporter)
-                .UseExternalConfiguration(ConfigureHandler)
+                .UseExternalConfiguration(ConfigureWebHostHandler)
                 .Build()
                 .RunAsync();
 

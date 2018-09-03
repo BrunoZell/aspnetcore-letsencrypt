@@ -8,25 +8,31 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace AspNetCore.LetsEncrypt {
     public class LetsEncryptBuilder {
-        private Action<LetsEncryptOptions> _configureAction;
         private IConfigurationSection _configurationSection;
+        private Action<LetsEncryptOptions> _configureOptionsHandler;
+        private Action<IWebHostBuilder> _configureWebHostHandler;
         private ICertificateSaver _certificateSaver;
         private ICertificateLoader _certificateLoader;
-        private Action<IWebHostBuilder> _configureHandler;
         private Action<ErrorInfo> _errorHandler;
         private Func<X509Certificate2, IWebHost> _continueHandler;
 
         // Todo: Pass (user defined) auth-key store
 
-        public LetsEncryptBuilder WithOptions(Action<LetsEncryptOptions> configureAction)
-        {
-            _configureAction = configureAction.ArgNotNull(nameof(configureAction));
-            return this;
-        }
-
         public LetsEncryptBuilder WithConfiguration(IConfigurationSection configurationSection)
         {
             _configurationSection = configurationSection.ArgNotNull(nameof(configurationSection));
+            return this;
+        }
+
+        public LetsEncryptBuilder WithOptions(Action<LetsEncryptOptions> configureOptionsHandler)
+        {
+            _configureOptionsHandler = configureOptionsHandler.ArgNotNull(nameof(configureOptionsHandler));
+            return this;
+        }
+
+        public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureWebHostHandler)
+        {
+            _configureWebHostHandler = configureWebHostHandler.ArgNotNull(nameof(configureWebHostHandler));
             return this;
         }
 
@@ -39,12 +45,6 @@ namespace AspNetCore.LetsEncrypt {
         public LetsEncryptBuilder UseCertificateLoader(ICertificateLoader certificateLoader)
         {
             _certificateLoader = certificateLoader.ArgNotNull(nameof(certificateLoader));
-            return this;
-        }
-
-        public LetsEncryptBuilder ConfigureWebHost(Action<IWebHostBuilder> configureHandler)
-        {
-            _configureHandler = configureHandler.ArgNotNull(nameof(configureHandler));
             return this;
         }
 
@@ -62,7 +62,7 @@ namespace AspNetCore.LetsEncrypt {
 
         public LetsEncrypt Build()
         {
-            if (_configurationSection == null && _configureAction == null) {
+            if (_configurationSection == null && _configureOptionsHandler == null) {
                 throw new LetsEncryptException($"Lets Encrypt is not configured. " +
                     $"Configure by invoking either {nameof(WithConfiguration)}() " +
                     $"or {nameof(WithOptions)}() on {nameof(LetsEncryptBuilder)}.");
@@ -86,12 +86,12 @@ namespace AspNetCore.LetsEncrypt {
                 new LetsEncryptOptions();
 
             // ... and (2) overwrite some options with the configure delegate, if any.
-            _configureAction?.Invoke(options);
+            _configureOptionsHandler?.Invoke(options);
 
             ValidateOptions(options);
 
             return new LetsEncrypt(options) {
-                ConfigureHandler = _configureHandler,
+                ConfigureWebHostHandler = _configureWebHostHandler,
                 ErrorHandler = _errorHandler,
                 ContinueHandler = _continueHandler,
                 CertificateLoader = _certificateLoader,
