@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,11 +14,12 @@ namespace WebApp {
     public static class Program {
         public static void Main(string[] args) =>
             new LetsEncryptBuilder()
+                .UseLogger(new LoggerFactory().AddConsole().AddDebug().CreateLogger<LetsEncrypt>())
                 .WithConfiguration(BuildConfiguration(args).GetSection("LetsEncrypt")) // See appsettings.json for structure
                 .WithOptions(options => {
                     // Here you can overwrite some options provided by WithConfiguration(..).
                     // Or don't use WithConfiguration(..) at all and configure everything in code here.
-                    options.Hostname = "f2e393d1.ngrok.io";
+                    options.Hostname = "overwritten.com";
                 })
                 .ConfigureWebHost(builder => {
                     // For the ACME chellenge a small Kestrel-server is hosted before the actual web app starts up.
